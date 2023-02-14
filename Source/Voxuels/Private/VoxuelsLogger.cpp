@@ -3,10 +3,4 @@
 
 #include "VoxuelsLogger.h"
 
-VoxuelsLogger::VoxuelsLogger()
-{
-}
-
-VoxuelsLogger::~VoxuelsLogger()
-{
-}
+DEFINE_LOG_CATEGORY(Voxuels);

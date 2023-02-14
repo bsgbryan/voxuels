@@ -4,12 +4,4 @@
 
 #include "CoreMinimal.h"
 
-/**
- * 
- */
-class VOXUELS_API VoxuelsLogger
-{
-public:
-	VoxuelsLogger();
-	~VoxuelsLogger();
-};
+DECLARE_LOG_CATEGORY_EXTERN(Voxuels, Log, All);
