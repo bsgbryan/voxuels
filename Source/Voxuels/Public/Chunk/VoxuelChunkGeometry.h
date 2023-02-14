@@ -26,12 +26,12 @@ public:
 	void Add(
 		Block::Face face,
 		const FVector position,
-		const FIntVector3 dimensions = FIntVector3(1, 1, 1)
+		const FIntVector3 dimensions = FIntVector3(0, 0, 0)
 	);
 
 	static TArray<FVector> GenerateQuad(
 		Block::Face face,
 		const FVector position,
-		const FIntVector3 dimensions = FIntVector3(1, 1, 1)
+		const FIntVector3 dimensions = FIntVector3(0, 0, 0)
 	);
 };
