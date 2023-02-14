@@ -42,10 +42,10 @@ TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
 
 	// if (face == Block::Face::Up) {
 	// 	UE_LOG(LogTemp, Log, TEXT("Face %d"), face)
-	// 	UE_LOG(LogTemp, Log, TEXT("0 %s"), *(Block::Vertices[Block::Triangles[f][0]] + ((position) * 100)).ToString())
+	// 	UE_LOG(LogTemp, Log, TEXT("0 %s"), *(Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(0, dimensions.Y, 0)) * 100)).ToString())
 	// 	UE_LOG(LogTemp, Log, TEXT("1 %s"), *(Block::Vertices[Block::Triangles[f][1]] + ((position) * 100)).ToString())
 	// 	UE_LOG(LogTemp, Log, TEXT("2 %s"), *(Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, 0, 0)) * 100)).ToString())
-	// 	UE_LOG(LogTemp, Log, TEXT("3 %s"), *(Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, 0, 0)) * 100)).ToString())
+	// 	UE_LOG(LogTemp, Log, TEXT("3 %s"), *(Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, dimensions.Y, 0)) * 100)).ToString())
 	// }
 
 	// UE_LOG(LogTemp, Log, TEXT("Position %s"), *position.ToString())
@@ -62,6 +62,7 @@ TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
 		}
 		case Block::Face::Left:
 		case Block::Face::Right: {
+			UE_LOG(LogTemp, Log, TEXT("Voxuels: position = %s"), *(position).ToString())
 			// It seems like all that should need to change here are the axes used to stretch out the quad ...
 			// _vertices[0] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(0, dimensions.Y, 0)) * 100);
 			// _vertices[1] = Block::Vertices[Block::Triangles[f][1]] + ((position) * 100);

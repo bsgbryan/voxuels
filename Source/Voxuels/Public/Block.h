@@ -5,27 +5,27 @@
 namespace Block {
 	enum class Face {
 		Front,
-		Right,
 		Back,
 		Left,
+		Right,
 		Up,
 		Down
 	};
 
 	constexpr Face AllFaces[6] = {
 		Face::Front,
-		Face::Right,
 		Face::Back,
 		Face::Left,
+		Face::Right,
 		Face::Up,
 		Face::Down
 	};
 
 	const FVector Vectors[6] = {
 		FVector::ForwardVector,
-		FVector::RightVector,
 		FVector::BackwardVector,
 		FVector::LeftVector,
+		FVector::RightVector,
 		FVector::UpVector,
 		FVector::DownVector
 	};
@@ -35,22 +35,52 @@ namespace Block {
 	};
 
 	const FVector Vertices[8] = {
-		FVector(100, 100, 100),
-		FVector(100,   0, 100),
-		FVector(100,   0,   0),
-		FVector(100, 100,   0),
-		FVector(  0,   0, 100),
-		FVector(  0, 100, 100),
-		FVector(  0, 100,   0),
-		FVector(  0,   0,   0)
+		FVector(100, 100, 100), // Far,  Right, High
+		FVector(100,   0, 100), // Far,  Left,  High
+		FVector(100,   0,   0), // Far,  Left,  Low
+		FVector(100, 100,   0), // Far,  Right, Low
+		FVector(  0,   0, 100), // Near, Left,  High
+		FVector(  0, 100, 100), // Near, Right, High
+		FVector(  0, 100,   0), // Near, Right, Low
+		FVector(  0,   0,   0)  // Near, Left,  Low
 	};
 
 	constexpr int Triangles[6][4] = {
-		{ 0, 1, 2, 3 }, // Front
-		{ 5, 0, 3, 6 }, // Right
-		{ 4, 5, 6, 7 }, // Back
-		{ 1, 4, 7, 2 }, // Left
-		{ 5, 4, 1, 0 }, // Up
-		{ 3, 2, 7, 6 }  // Down
+		{ // Front/Away from the camera
+			0, // Far, Right, High
+			1, // Far, Left,  High
+			2, // Far, Left,  Low
+			3  // Far, Right, Low
+		}, // Front
+		{ // Back/Toward the camera
+			4, // Near, Left,  High
+			5, // Near, Right, High
+			6, // Near, Near, Low
+			7  // Near, Right, Low
+		}, // Back
+		{ // Left
+			1, // Far,  Left,  High
+			4, // Near, Left,  High
+			7, // Near, Left,  Low
+			2  // Far,  Left,  Low
+		}, // Left
+		{ // Right
+			5, // Near, Right, High
+			0, // Far,  Right, High
+			3, // Far,  Right, Low
+			6  // Near, Right, Low
+		}, // Right
+		{ // Up
+			5, // Near, Right, High
+			4, // Near, Left,  High
+			1, // Far,  Left,  High
+			0  // Far,  Right, High
+		}, // Up
+		{ // Down
+			3, // Far,  Right, Low
+			2, // Far,  Left,  Low
+			7, // Near, Left,  Low
+			6  // Near, Right, Low
+		} // Down
 	};
 }

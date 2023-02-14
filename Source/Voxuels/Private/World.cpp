@@ -11,10 +11,10 @@ AVoxuelWorld::AVoxuelWorld() {
 void AVoxuelWorld::BeginPlay() {
 	Super::BeginPlay();
 
-	for (int i = 0, y = -1; i < DrawDistance * DrawDistance; i++) {
-		const int x = i % DrawDistance;
+	for (int i = 0, x = DrawDistance; i < DrawDistance * DrawDistance; i++) {
+		const int y = i % DrawDistance;
 
-		y = i % DrawDistance == 0 ? y + 1 : y;
+		x = i % DrawDistance == 0 ? x - 1 : x;
 
 		const auto _location = FVector(x * ChunkDimensions.X * 100, y * ChunkDimensions.Y * 100, 0);
 		const auto _chunk	 = GetWorld()->SpawnActor<AVoxuelChunkBase>(Chunk, _location, FRotator::ZeroRotator);

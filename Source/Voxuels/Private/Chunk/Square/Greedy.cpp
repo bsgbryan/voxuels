@@ -19,13 +19,13 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			int  _width		 = 0;
 			auto _width_test = FVector(x, y, z);
 			
-			while (_width + x < size.X - 1 && surface[GetBlockMeshIndex(size, _width_test)]) {
+			while (_width + y < size.Y - 1 && surface[GetBlockMeshIndex(size, _width_test)]) {
 				i++;
 				_width++;
-				_width_test = FVector(x + _width, y, z);
+				_width_test = FVector(x, y + _width, z);
 
 				for (int d = 0; d < _width; d++) {
-					auto _depth_test = FVector(x + d, y + ++_depth, z);
+					auto _depth_test = FVector(x + ++_depth, y + d, z);
 
 					if (!surface[GetBlockMeshIndex(size, _depth_test)])
 						_width = --_depth;
@@ -33,19 +33,23 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			}
 
 			if (_width > 0) {
-				geometry->Add(Block::Face::Up, FVector(x, y, z), FIntVector3(_width - 1, _depth - 1, 0));
+				geometry->Add(
+					Block::Face::Up,
+					FVector(x, y, z),
+					FIntVector3(_width, _depth, 0)
+				);
 
-				x += _width;
+				y += _width;
 			}
 			else
-				x++;
+				y++;
 
 			if (_depth > 0)
-				y += _depth;
+				x += _depth;
 
 			if (x == size.X) {
-				x = 0;
-				y++;
+				y = 0;
+				x++;
 			}
 		}
 

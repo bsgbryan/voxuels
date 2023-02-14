@@ -96,17 +96,17 @@ TArray<bool> AVoxuelChunkBase::GenerateSurface(
 ) {
 	noise->SetupFastNoise(EFastNoise_NoiseType::Perlin, seed, frequency);
 
-	const int _width  = size.X + 2;
-	const int _depth  = size.Y + 2;
+	const int _width  = size.Y + 2;
+	const int _depth  = size.X + 2;
 	const int _height = size.Z;
 	
 	TArray<bool> _surface;
 	_surface.SetNum(_width * _depth * _height);
 
-	for (int i = 0, y = -1; i < _width * _depth; i++) {
-		const int x = i % _width;
+	for (int i = 0, x = _depth; i < _width * _depth; i++) {
+		const int y = i % _width;
 
-		y = i % _width == 0 ? y + 1 : y;
+		x = i % _width == 0 ? x - 1 : x;
 
 		const float _x_pos  = (((x - 1) * 100 + location.X) / 100) + 0.01f;
 		const float _y_pos  = (((y - 1) * 100 + location.Y) / 100) + 0.01f;
