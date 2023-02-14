@@ -9,13 +9,13 @@ void AVoxuelChunkSquareSimple::GenerateMesh(
 	TArray<bool> surface,
 	const FIntVector size
 ) const {
-	for (int i = 0, y = -1, z = -1; i < size.X * size.Y * size.Z; i++) {
-		const int x = i % size.X;
+	for (int i = 0, x = -1, z = -1; i < size.X * size.Y * size.Z; i++) {
+		const int y = i % size.Y;
 
 		if (i % (size.X * size.Y) == 0)
-			y = 0;
+			x = 0;
 		else
-			y = i % size.X == 0 ? y + 1 : y;
+			x = i % size.X == 0 ? x + 1 : x;
 		
 		z = i % (size.X * size.Y) == 0 ? z + 1 : z;
 

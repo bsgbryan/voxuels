@@ -103,10 +103,10 @@ TArray<bool> AVoxuelChunkBase::GenerateSurface(
 	TArray<bool> _surface;
 	_surface.SetNum(_width * _depth * _height);
 
-	for (int i = 0, x = _depth; i < _width * _depth; i++) {
+	for (int i = 0, x = -1; i < _width * _depth; i++) {
 		const int y = i % _width;
 
-		x = i % _width == 0 ? x - 1 : x;
+		x = i % _width == 0 ? x + 1 : x;
 
 		const float _x_pos  = (((x - 1) * 100 + location.X) / 100) + 0.01f;
 		const float _y_pos  = (((y - 1) * 100 + location.Y) / 100) + 0.01f;
