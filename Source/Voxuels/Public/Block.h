@@ -55,8 +55,8 @@ namespace Block {
 		{ // Back/Toward the camera
 			4, // Near, Left,  High
 			5, // Near, Right, High
-			6, // Near, Near, Low
-			7  // Near, Right, Low
+			6, // Near, Right, Low
+			7  // Near, Left,  Low
 		}, // Back
 		{ // Left
 			1, // Far,  Left,  High
