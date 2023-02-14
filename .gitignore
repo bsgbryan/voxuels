@@ -34,3 +34,6 @@ Plugins/Developer/RiderLink
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# Project-specific ignores
+Voxuels.uproject.DotSettings.user
