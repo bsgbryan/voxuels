@@ -18,6 +18,9 @@ Platforms
 *.xcworkspace
 *.code-workspace
 
+# Unreal Engine plugins I don't want people who clone this repo to need
+Plugins/Developer/RiderLink
+
 # Default ignored files
 /shelf/
 /workspace.xml
