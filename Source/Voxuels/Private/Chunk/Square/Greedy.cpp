@@ -13,44 +13,50 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 	int y = 0;
 	int z = size.Z - 1;
 
-	while (z > -1) {
-		for (int i = 0; i < size.X * size.Y; i++) {
-			int  _depth		 = 0;
-			int  _width		 = 0;
-			auto _width_test = FVector(x, y, z);
+	while (z > -1) {		
+		for (int i = 0; i < size.X * size.Y;) {
+			int  _depth = 0;
+			int  _width	= 0;
 			
-			while (_width + y < size.Y - 1 && surface[GetBlockMeshIndex(size, _width_test)]) {
-				i++;
-				_width++;
-				_width_test = FVector(x, y + _width, z);
+			while (_width + 1 + y < size.Y && surface[GetBlockMeshIndex(size, FVector(x, y + _width, z))])
+				++_width;
 
-				for (int d = 0; d < _width; d++) {
-					auto _depth_test = FVector(x + ++_depth, y + d, z);
+			bool _depth_limit_reached = false;
+			
+			while (_width > 0 && !_depth_limit_reached && _depth + x < size.X) {
+				for (int d = 0; d <= _width; d++)
+					if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + d, z))]) {
+						_depth_limit_reached = true;
+				
+						break;
+					}
 
-					if (!surface[GetBlockMeshIndex(size, _depth_test)])
-						_width = --_depth;
-				}
+				if (!_depth_limit_reached)
+					++_depth;
 			}
 
-			if (_width > 0) {
+			if (_width > 0 || _depth > 0)
 				geometry->Add(
 					Block::Face::Up,
 					FVector(x, y, z),
-					FIntVector3(_width, _depth, 0)
+					FIntVector3(_depth == 0 ? 0 : _depth - 1, _width == 0 ? 0 : _width - 1, 0)
 				);
+			
+			y += _width > 0 ? _width : 1;
 
-				y += _width;
-			}
-			else
-				y++;
-
-			if (_depth > 0)
-				x += _depth;
-
-			if (x == size.X) {
+			if (y == size.Y) {
+				x += _depth > 0 ? _depth : 1;
+				
 				y = 0;
-				x++;
 			}
+
+			i += _width * _depth == 0 ?
+				_width + _depth == 0 ?
+					1
+					:
+					_width + _depth
+				:
+				_width * _depth;
 		}
 
 		z--;
