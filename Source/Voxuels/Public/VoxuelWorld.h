@@ -15,6 +15,9 @@ public:
 	AVoxuelWorld();
 
 	UPROPERTY(EditAnywhere, Category="World")
+	FVector Offset = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category="World")
 	TSubclassOf<AActor> Chunk;
 	
 	UPROPERTY(EditAnywhere, Category="World")
