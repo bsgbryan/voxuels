@@ -111,7 +111,7 @@ TArray<bool> AVoxuelChunkBase::GenerateSurface(
 		const float _x_pos  = (((x - 1) * 100 + location.X) / 100) + 0.01f;
 		const float _y_pos  = (((y - 1) * 100 + location.Y) / 100) + 0.01f;
 		const float _scaled = (noise->GetNoise2D(_x_pos, _y_pos) + 1) * _height / 2;
-		const int   _value  = FMath::Clamp(FMath::RoundToInt(_scaled), 0, _height);
+		const int   _value  = FMath::Clamp(FMath::RoundToInt(_scaled), 0, _height - 1);
 
 		_surface[GetBlockIndex(size, FVector(x, y, _value))] = true;
 
