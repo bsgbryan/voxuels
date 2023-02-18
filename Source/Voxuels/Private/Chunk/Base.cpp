@@ -211,9 +211,9 @@ int AVoxuelChunkBase::GetBlockIndex(
 	const FVector position
 ) {
 	return
-		 static_cast<int>(position.X) +
-		(static_cast<int>(position.Y) *  (size.X + 2)) +
-		(static_cast<int>(position.Z) * ((size.X + 2) * (size.Y + 2)));
+		 static_cast<int>(position.Y) +
+		(static_cast<int>(position.X) *  (size.Y + 1)) +
+		(static_cast<int>(position.Z) * ((size.X + 1) * (size.Y + 1)));
 }
 
 int AVoxuelChunkBase::GetBlockMeshIndex(
@@ -221,7 +221,7 @@ int AVoxuelChunkBase::GetBlockMeshIndex(
 	const FVector position
 ) {
 	return
-		 (static_cast<int>(position.X) + 1) +
-		((static_cast<int>(position.Y) + 1) * (size.X + 2)) +
-		(static_cast<int>(position.Z) * ((size.X + 2) * (size.Y + 2)));
+		 (static_cast<int>(position.Y) + 1) +
+		((static_cast<int>(position.X) + 1) * (size.Y + 1)) +
+		(static_cast<int>(position.Z) * ((size.X + 1) * (size.Y + 1)));
 }
