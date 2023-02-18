@@ -15,7 +15,7 @@ void AVoxuelChunkSquareSimple::GenerateMesh(
 		if (i % (size.X * size.Y) == 0)
 			x = 0;
 		else
-			x = i % size.X == 0 ? x + 1 : x;
+			x = i % size.Y == 0 ? x + 1 : x;
 		
 		z = i % (size.X * size.Y) == 0 ? z + 1 : z;
 
