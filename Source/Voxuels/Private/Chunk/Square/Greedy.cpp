@@ -43,21 +43,6 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			) {
 				const int _current = (y + _width) + (size.Y * x);
 				_faces[_current] |= Processed;
-
-				if (!surface[GetBlockMeshIndex(size, FVector(x + 1, y + _width, z))]) {
-					++_front_wall;
-					
-					_faces[_current] |= Front;
-				}
-				else if (_front_wall > 0) {
-					geometry->Add(
-						Block::Face::Front,
-						FVector(x, y + _width - _front_wall, z),
-						FIntVector3(0, _front_wall, 0)
-					);
-					
-					_front_wall = 0;
-				}
 				
 				if (x > 0) {
 					if (!surface[GetBlockMeshIndex(size, FVector(x - 1, y + _width, z))]) {
@@ -109,7 +94,7 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 				else if (_right_wall > 0) {
 					geometry->Add(
 						Block::Face::Right,
-						FVector(x - (_right_wall - 1), y + _width - 1, z),
+						FVector(x - _right_wall, y + _width - 1, z),
 						FIntVector3( _right_wall - 1, 0, 0)
 					);
 					
@@ -118,17 +103,25 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			}
 
 			if (x == size.X - 1) {
-				if (_left_wall > 0)
+				if (_left_wall > 0) {
 					geometry->Add(
 						Block::Face::Left,
-						FVector(x, y, z)
+						FVector(x, y, z),
+						FIntVector(_left_wall - 1, 0, 0)
 					);
 
-				if (_right_wall > 0)
+					_left_wall = 0;
+				}
+
+				if (_right_wall > 0) {
 					geometry->Add(
 						Block::Face::Right,
-						FVector(x, y + _width - 1, z)
+						FVector(x, y + _width - 1, z),
+						FIntVector(_right_wall - 1, 0, 0)
 					);
+
+					_right_wall = 0;
+				}
 			}
 
 			int _depth = 1;
@@ -147,26 +140,9 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 								FIntVector3(0, 0, 0)
 							);
 						}
-						else {
+						else
 							for (int j = 0; j < d; j++)
 								_faces[(y + j) + (size.Y * (x + _depth))] &= ~Processed;
-
-							for (int f = 0; f <= _width; f++) {
-								if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + f, z))])
-									++_front_wall;
-								else {
-									geometry->Add(
-										Block::Face::Front,
-										FVector(x + _depth - 1, y, z),
-										FIntVector3(0, _front_wall, 0)
-									);
-
-									_front_wall = 0;
-								}
-							}
-						}
-
-						_front_wall = 0;
 				
 						break;
 					}
@@ -207,10 +183,25 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			}
 
 			if (x + _depth < size.X) {
+				for (int f = 0; f <= _width; f++)
+					if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + f, z))])
+						++_front_wall;
+					else {
+						geometry->Add(
+							Block::Face::Front,
+							FVector(x + _depth - 1, y + f - _front_wall, z),
+							FIntVector3(0, _front_wall - 1, 0)
+						);
+
+						_front_wall = 0;
+					}
+			}
+
+			if (--_front_wall > 0) {
 				geometry->Add(
 					Block::Face::Front,
-					FVector(x + _depth - 1, y, z),
-					FIntVector3(0, _width - 1, 0)
+					FVector(x + _depth - 1, y + _width - _front_wall, z),
+					FIntVector3(0, _front_wall - 1, 0)
 				);
 			}
 			
