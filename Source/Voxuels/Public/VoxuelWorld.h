@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Chunk/VoxuelChunkBase.h"
 #include "GameFramework/Actor.h"
 #include "VoxuelWorld.generated.h"
 
@@ -26,16 +27,40 @@ public:
 	UPROPERTY(EditAnywhere, Category="World")
 	FIntVector ChunkDimensions = FIntVector(32, 32, 32);
 
-	UPROPERTY(EditAnywhere, Category="World")
-	bool Threaded = true;
-	
 	UPROPERTY(EditAnywhere, Category="Noise")
 	float Frequency = 0.03f;
 
 	UPROPERTY(EditAnywhere, Category="Noise")
 	int Seed = 1138;
 
+	UPROPERTY(EditAnywhere, Category="Debug")
+	bool Threaded = true;
+	
+	UPROPERTY(EditAnywhere, Category="Debug")
+	bool IterativeRendering = false;
+
+	UPROPERTY(EditAnywhere, Category="Debug")
+	FIntVector RenderToChunk = FIntVector::ZeroValue;
+	
+	UPROPERTY(EditAnywhere, Category="Debug")
+	FIntVector RenderToBlock = FIntVector::ZeroValue;
+
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	UFUNCTION(CallInEditor, Category = "Debug")
+	void RenderAll();
+
+	UFUNCTION(CallInEditor, Category = "Debug")
+	void RenderChunk();
+
+	UFUNCTION(CallInEditor, Category = "Debug")
+	void Clear();
+
+private:
+	bool RenderEnvironmentInitialized = false;
+	TArray<TObjectPtr<AVoxuelChunkBase>> Chunks;
+
+	void InitializeRenderEnvironment();
+	
+	void DoRenderAll();
+	void DoRenderIteration();
 };
