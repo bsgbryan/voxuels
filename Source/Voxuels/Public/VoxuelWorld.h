@@ -12,7 +12,6 @@ class VOXUELS_API AVoxuelWorld final : public AActor {
 	GENERATED_BODY()
 	
 public:
-	// Sets default values for this actor's properties
 	AVoxuelWorld();
 
 	UPROPERTY(EditAnywhere, Category="World")
@@ -22,7 +21,7 @@ public:
 	TSubclassOf<AActor> Chunk;
 	
 	UPROPERTY(EditAnywhere, Category="World")
-	int DrawDistance = 5;
+	FIntVector DrawDistance = FIntVector(5, 5, 1);
 
 	UPROPERTY(EditAnywhere, Category="World")
 	FIntVector ChunkDimensions = FIntVector(32, 32, 32);
@@ -56,11 +55,14 @@ protected:
 	void Clear();
 
 private:
+	FIntVector Current = FIntVector::ZeroValue;
+	
 	bool RenderEnvironmentInitialized = false;
+
 	TArray<TObjectPtr<AVoxuelChunkBase>> Chunks;
 
 	void InitializeRenderEnvironment();
-	
+	bool DoRenderChunk(int y, int x);
+
 	void DoRenderAll();
-	void DoRenderIteration();
 };
