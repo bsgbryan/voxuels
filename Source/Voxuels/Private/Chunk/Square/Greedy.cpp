@@ -1,18 +1,18 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Block.h"
+#include "VoxuelsLogger.h"
 #include "Chunk/Square/VoxuelChunkSquareGreedy.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 
-enum OpenSide : int8 {
-	NA				= 0,
-	Processed = 2^0,
-	Front 		= 2^1,
-	Back  		= 2^2,
-	Left  		= 2^3,
-	Right 		= 2^4,
-	Up				= 2^5,
-	Down  		= 2^6
+enum OpenSide : uint8 {
+	Processed = 1 << 1,
+	Front 		= 1 << 2,
+	Back  		= 1 << 3,
+	Left  		= 1 << 4,
+	Right 		= 1 << 5,
+	Up				= 1 << 6,
+	Down  		= 1 << 7
 };
 
 void AVoxuelChunkSquareGreedy::GenerateMesh(
@@ -36,29 +36,27 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 			int _right_wall = 0;
 			
 			while (
-				x < size.X																							&&
-				y + _width < size.Y																			&&
-				(_faces[(y + _width) + (size.Y * x)] & Processed) == NA &&
+				x < size.X																						 &&
+				y + _width < size.Y																		 &&
+				(_faces[(y + _width) + (size.Y * x)] & Processed) == 0 &&
 				surface[GetBlockMeshIndex(size, FVector(x, y + _width, z))]
 			) {
 				const int _current = (y + _width) + (size.Y * x);
 				_faces[_current] |= Processed;
 				
-				if (x > 0) {
-					if (!surface[GetBlockMeshIndex(size, FVector(x - 1, y + _width, z))]) {
-						++_back_wall;
-				
-						_faces[_current] |= Back;
-					}
-					else if (_back_wall > 0) {
-						geometry->Add(
-							Block::Face::Back,
-							FVector(x, y + _width - _back_wall, z),
-							FIntVector3(0, _back_wall - 1, 0)
-						);
-				
-						_back_wall = 0;
-					}	
+				if (!surface[GetBlockMeshIndex(size, FVector(x - 1, y + _width, z))]) {
+					++_back_wall;
+			
+					_faces[_current] |= Back;
+				}
+				else if (_back_wall > 0) {
+					geometry->Add(
+						Block::Face::Back,
+						FVector(x, y + _width - _back_wall, z),
+						FIntVector3(0, _back_wall - 1, 0)
+					);
+			
+					_back_wall = 0;
 				}
 				
 				++_width;
@@ -182,20 +180,18 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 					++_depth;
 			}
 
-			if (x + _depth < size.X) {
-				for (int f = 0; f <= _width; f++)
-					if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + f, z))])
-						++_front_wall;
-					else {
-						geometry->Add(
-							Block::Face::Front,
-							FVector(x + _depth - 1, y + f - _front_wall, z),
-							FIntVector3(0, _front_wall - 1, 0)
-						);
+			for (int f = 0; f <= _width; f++)
+				if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + f, z))])
+					++_front_wall;
+				else {
+					geometry->Add(
+						Block::Face::Front,
+						FVector(x + _depth - 1, y + f - _front_wall, z),
+						FIntVector3(0, _front_wall - 1, 0)
+					);
 
-						_front_wall = 0;
-					}
-			}
+					_front_wall = 0;
+				}
 
 			if (--_front_wall > 0) {
 				geometry->Add(
@@ -204,35 +200,41 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 					FIntVector3(0, _front_wall - 1, 0)
 				);
 			}
+
+			if (x + _depth == size.X && _left_wall > 0) {
+				geometry->Add(
+					Block::Face::Left,
+					FVector(x + _depth - _left_wall, y, z),
+					FIntVector3(_left_wall - 1, 0, 0)
+				);
+
+				_left_wall = 0;
+			}
 			
 			if (--_left_wall > 0) {
-				if (x + _depth == size.X)
-					geometry->Add(
-						Block::Face::Left,
-						FVector(x + _depth - _left_wall - 1, y, z),
-						FIntVector3(_left_wall, 0, 0)
-					);
-				else
-					geometry->Add(
-						Block::Face::Left,
-						FVector(x + _depth - _left_wall, y, z),
-						FIntVector3(_left_wall - 1, 0, 0)
-					);
+				geometry->Add(
+					Block::Face::Left,
+					FVector(x + _depth - _left_wall, y, z),
+					FIntVector3(_left_wall - 1, 0, 0)
+				);
+			}
+
+			if (x + _depth == size.X && _right_wall > 0) {
+				geometry->Add(
+					Block::Face::Right,
+					FVector(x + _depth - _right_wall - 1, y + _width - 1, z),
+					FIntVector3(_right_wall, 0, 0)
+				);
+
+				_right_wall = 0;
 			}
 			
 			if (--_right_wall > 0) {
-				if (x + _depth == size.X)
-					geometry->Add(
-						Block::Face::Right,
-						FVector(x + _depth - _right_wall - 1, y + _width - 1, z),
-						FIntVector3(_right_wall, 0, 0)
-					);
-				else
-					geometry->Add(
-						Block::Face::Right,
-						FVector(x + _depth - _right_wall, y + _width - 1, z),
-						FIntVector3(_right_wall - 1, 0, 0)
-					);
+				geometry->Add(
+					Block::Face::Right,
+					FVector(x + _depth - _right_wall, y + _width - 1, z),
+					FIntVector3(_right_wall - 1, 0, 0)
+				);
 			}
 
 			if (_width > 0 || _depth - 1 > 0)

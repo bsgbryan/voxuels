@@ -18,7 +18,9 @@ void AVoxuelChunkBase::Generate(
 	const bool threaded,
 	const FIntVector size,
 	int seed,
-	float frequency
+	float frequency,
+	const FIntVector from,
+	const FIntVector to
 ) const {
 	const auto _location = GetActorLocation();
 	const auto _mesh = Mesh;
@@ -41,7 +43,9 @@ void AVoxuelChunkBase::Generate(
 				_noise,
 				size,
 				seed,
-				frequency
+				frequency,
+				from,
+				to
 			);
 
 			GenerateMesh(_geometry, _surface, size);
@@ -63,13 +67,14 @@ void AVoxuelChunkBase::Generate(
 			});
 		});
 	else {
-		// UE_LOG(LogTemp, Log, TEXT("Location %s"), *_location.ToString())
 		const TArray<bool> _surface = GenerateSurface(
 			_location,
 			Noise,
 			size,
 			seed,
-			frequency
+			frequency,
+			from,
+			to
 		);
 
 		GenerateMesh(_geometry, _surface, size);
@@ -92,7 +97,9 @@ TArray<bool> AVoxuelChunkBase::GenerateSurface(
 	const TObjectPtr<UFastNoiseWrapper> noise,
 	const FIntVector size,
 	const int seed,
-	const float frequency
+	const float frequency,
+	const FIntVector from,
+	const FIntVector to
 ) {
 	noise->SetupFastNoise(EFastNoise_NoiseType::Perlin, seed, frequency);
 
@@ -108,90 +115,96 @@ TArray<bool> AVoxuelChunkBase::GenerateSurface(
 
 		x = i % _width == 0 ? x + 1 : x;
 
-		const float _x_pos  = (((x - 1) * 100 + location.X) / 100) + 0.01f;
-		const float _y_pos  = (((y - 1) * 100 + location.Y) / 100) + 0.01f;
-		const float _scaled = (noise->GetNoise2D(_x_pos, _y_pos) + 1) * _height / 2;
-		const int   _value  = FMath::Clamp(FMath::RoundToInt(_scaled), 0, _height - 1);
+		if (
+			(from.Y == INDEX_NONE && from.X == INDEX_NONE) ||
+			(to.Y		== INDEX_NONE && to.X		== INDEX_NONE) ||
+			(from.Y < y + 1 && from.X < x + 1 && to.Y >= y && to.X >= x)
+		) {
+			const float _x_pos  = (((x - 1) * 100 + location.X) / 100) + 0.01f;
+			const float _y_pos  = (((y - 1) * 100 + location.Y) / 100) + 0.01f;
+			const float _scaled = (noise->GetNoise2D(_x_pos, _y_pos) + 1) * _height / 2;
+			const int   _value  = FMath::Clamp(FMath::RoundToInt(_scaled), 0, _height - 1);
 
-		_surface[GetBlockIndex(size, FVector(x, y, _value))] = true;
+			_surface[GetBlockIndex(size, FVector(x, y, _value))] = true;
 
-		bool _filled_in    = false;
-		int  _offset	   = 1;
-		bool _y_filled_in  = false;
-		bool _x_filled_in  = false;
-		bool _xy_filled_in = false;
+			bool _filled_in    = false;
+			int  _offset	   = 1;
+			bool _y_filled_in  = false;
+			bool _x_filled_in  = false;
+			bool _xy_filled_in = false;
 
-		while (!_filled_in) {
-			if (_value + _offset < size.Z && _value - _offset > -1) {
-				if (x > 0 && y > 0 && !_surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value))]) {
-					const bool _xy_up   = _surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value + _offset))];
-					const bool _xy_down = _surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value - _offset))];
-				
-					if (!_xy_filled_in && _xy_up) {
+			while (!_filled_in) {
+				if (_value + _offset < size.Z && _value - _offset > -1) {
+					if (x > 0 && y > 0 && !_surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value))]) {
+						const bool _xy_up   = _surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value + _offset))];
+						const bool _xy_down = _surface[GetBlockIndex(size, FVector(x - 1, y - 1, _value - _offset))];
+					
+						if (!_xy_filled_in && _xy_up) {
+							_xy_filled_in = true;
+							
+							for (int h = _value + 1; h < _value + _offset; h++)
+								_surface[GetBlockIndex(size, FVector(x - 1, y - 1, h))] = true;
+						}
+
+						if (!_xy_filled_in && _xy_down) {
+							_xy_filled_in = true;
+							
+							for (int h = _value - 1; h > _value - _offset; h--)
+								_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
+						}
+					}
+					else
 						_xy_filled_in = true;
-						
-						for (int h = _value + 1; h < _value + _offset; h++)
-							_surface[GetBlockIndex(size, FVector(x - 1, y - 1, h))] = true;
-					}
 
-					if (!_xy_filled_in && _xy_down) {
-						_xy_filled_in = true;
-						
-						for (int h = _value - 1; h > _value - _offset; h--)
-							_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
-					}
-				}
-				else
-					_xy_filled_in = true;
+					if (y > 0 && !_surface[GetBlockIndex(size, FVector(x, y - 1, _value))]) {
+						const bool _y_up   = _surface[GetBlockIndex(size, FVector(x, y - 1, _value + _offset))];
+						const bool _y_down = _surface[GetBlockIndex(size, FVector(x, y - 1, _value - _offset))];
+					
+						if (!_y_filled_in && _y_up) {
+							_y_filled_in = true;
+							
+							for (int h = _value + 1; h < _value + _offset; h++)
+								_surface[GetBlockIndex(size, FVector(x, y - 1, h))] = true;
+						}
 
-				if (y > 0 && !_surface[GetBlockIndex(size, FVector(x, y - 1, _value))]) {
-					const bool _y_up   = _surface[GetBlockIndex(size, FVector(x, y - 1, _value + _offset))];
-					const bool _y_down = _surface[GetBlockIndex(size, FVector(x, y - 1, _value - _offset))];
-				
-					if (!_y_filled_in && _y_up) {
+						if (!_y_filled_in && _y_down) {
+							_y_filled_in = true;
+							
+							for (int h = _value - 1; h > _value - _offset; h--)
+								_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
+						}
+					}
+					else
 						_y_filled_in = true;
-						
-						for (int h = _value + 1; h < _value + _offset; h++)
-							_surface[GetBlockIndex(size, FVector(x, y - 1, h))] = true;
-					}
 
-					if (!_y_filled_in && _y_down) {
-						_y_filled_in = true;
-						
-						for (int h = _value - 1; h > _value - _offset; h--)
-							_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
+					if (x > 0 && !_surface[GetBlockIndex(size, FVector(x - 1, y, _value))]) {
+						const bool _x_up   = _surface[GetBlockIndex(size, FVector(x - 1, y, _value + _offset))];
+						const bool _x_down = _surface[GetBlockIndex(size, FVector(x - 1, y, _value - _offset))];
+					
+						if (!_x_filled_in && _x_up) {
+							_x_filled_in = true;
+							
+							for (int h = _value + 1; h < _value + _offset; h++)
+								_surface[GetBlockIndex(size, FVector(x - 1, y, h))] = true;
+						}
+
+						if (!_x_filled_in && _x_down) {
+							_x_filled_in = true;
+							
+							for (int h = _value - 1; h > _value - _offset; h--)
+								_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
+						}
 					}
+					else
+						_x_filled_in = true;
+					
+
+					_filled_in = _xy_filled_in && _y_filled_in && _x_filled_in;
+					++_offset;
 				}
 				else
-					_y_filled_in = true;
-
-				if (x > 0 && !_surface[GetBlockIndex(size, FVector(x - 1, y, _value))]) {
-					const bool _x_up   = _surface[GetBlockIndex(size, FVector(x - 1, y, _value + _offset))];
-					const bool _x_down = _surface[GetBlockIndex(size, FVector(x - 1, y, _value - _offset))];
-				
-					if (!_x_filled_in && _x_up) {
-						_x_filled_in = true;
-						
-						for (int h = _value + 1; h < _value + _offset; h++)
-							_surface[GetBlockIndex(size, FVector(x - 1, y, h))] = true;
-					}
-
-					if (!_x_filled_in && _x_down) {
-						_x_filled_in = true;
-						
-						for (int h = _value - 1; h > _value - _offset; h--)
-							_surface[GetBlockIndex(size, FVector(x, y, h))] = true;
-					}
-				}
-				else
-					_x_filled_in = true;
-				
-
-				_filled_in = _xy_filled_in && _y_filled_in && _x_filled_in;
-				++_offset;
+					_filled_in = true;
 			}
-			else
-				_filled_in = true;
 		}
 	}
 
@@ -212,8 +225,8 @@ int AVoxuelChunkBase::GetBlockIndex(
 ) {
 	return
 		 static_cast<int>(position.Y) +
-		(static_cast<int>(position.X) *  (size.Y + 1)) +
-		(static_cast<int>(position.Z) * ((size.X + 1) * (size.Y + 1)));
+		(static_cast<int>(position.X) *  (size.Y + 2)) +
+		(static_cast<int>(position.Z) * ((size.X + 2) * (size.Y + 2)));
 }
 
 int AVoxuelChunkBase::GetBlockMeshIndex(
@@ -222,6 +235,6 @@ int AVoxuelChunkBase::GetBlockMeshIndex(
 ) {
 	return
 		 (static_cast<int>(position.Y) + 1) +
-		((static_cast<int>(position.X) + 1) * (size.Y + 1)) +
-		(static_cast<int>(position.Z) * ((size.X + 1) * (size.Y + 1)));
+		((static_cast<int>(position.X) + 1) * (size.Y + 2)) +
+		(static_cast<int>(position.Z) * ((size.X + 2) * (size.Y + 2)));
 }

@@ -39,10 +39,16 @@ public:
 	bool IterativeRendering = false;
 
 	UPROPERTY(EditAnywhere, Category="Debug")
+	FIntVector RenderFromChunk = FIntVector::ZeroValue;
+
+	UPROPERTY(EditAnywhere, Category="Debug")
 	FIntVector RenderToChunk = FIntVector::ZeroValue;
 	
 	UPROPERTY(EditAnywhere, Category="Debug")
-	FIntVector RenderToBlock = FIntVector::ZeroValue;
+	FIntVector RenderFromBlock = FIntVector::NoneValue;
+
+	UPROPERTY(EditAnywhere, Category="Debug")
+	FIntVector RenderToBlock = FIntVector::NoneValue;
 
 protected:
 	UFUNCTION(CallInEditor, Category = "Debug")

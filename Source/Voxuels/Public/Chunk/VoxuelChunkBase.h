@@ -22,12 +22,13 @@ class VOXUELS_API AVoxuelChunkBase : public AActor {
 public:	
 	AVoxuelChunkBase();
 
-	UFUNCTION(BlueprintCallable, Category="Chunk")
 	void Generate(
 		bool threaded,
 		FIntVector size,
 		int seed,
-		float frequency
+		float frequency,
+		const FIntVector from = FIntVector::NoneValue,
+		const FIntVector to = FIntVector::NoneValue
 	) const;
 
 protected:
@@ -39,7 +40,9 @@ protected:
 		TObjectPtr<UFastNoiseWrapper> noise,
 		FIntVector size,
 		int seed,
-		float frequency
+		float frequency,
+		const FIntVector from = FIntVector::NoneValue,
+		const FIntVector to = FIntVector::NoneValue
 	);
 
 	virtual void GenerateMesh(

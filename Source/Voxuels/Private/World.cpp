@@ -52,7 +52,12 @@ void AVoxuelWorld::InitializeRenderEnvironment() {
 }
 
 bool AVoxuelWorld::DoRenderChunk(const int y, const int x) {
-	if ((RenderToChunk.Y == 0 || y < RenderToChunk.Y) && (RenderToChunk.X == 0 || x < RenderToChunk.X)) {
+	if (
+		y >= RenderFromChunk.Y												&&
+		x >= RenderFromChunk.X												&&
+		(RenderToChunk.Y == 0 || y < RenderToChunk.Y) &&
+		(RenderToChunk.X == 0 || x < RenderToChunk.X)
+	) {
 		const auto _location = FVector(
 			(x * ChunkDimensions.X * 100) + Offset.X * 100,
 			(y * ChunkDimensions.Y * 100) + Offset.Y * 100,
@@ -61,7 +66,14 @@ bool AVoxuelWorld::DoRenderChunk(const int y, const int x) {
 
 		const auto _chunk = GetWorld()->SpawnActor<AVoxuelChunkBase>(Chunk, _location, FRotator::ZeroRotator);
 
-		_chunk->Generate(Threaded, ChunkDimensions, Seed, Frequency);
+		_chunk->Generate(
+			Threaded,
+			ChunkDimensions,
+			Seed,
+			Frequency,
+			RenderFromBlock,
+			RenderToBlock
+		);
 
 		Chunks[y + (DrawDistance.Y * x)] = _chunk;
 
