@@ -16,5 +16,47 @@ public:
 		TArray<bool> surface,
 		const FIntVector size
 	) const override;
+
+private:
+	static void RenderWidthSurface(
+		const Block::Face direction,
+		const uint8 size,
+		const FVector position,
+		const TObjectPtr<UVoxuelChunkGeometry> geometry
+	);
+
+	static void RenderDepthSurface(
+		const Block::Face direction,
+		const uint8 size,
+		const FVector position,
+		const TObjectPtr<UVoxuelChunkGeometry> geometry
+	);
+	
+	static int8 ProcessBlockForWidthSurface(
+		const Block::Face direction,
+		const TArray<bool> surface,
+		const TObjectPtr<UVoxuelChunkGeometry> geometry,
+		const FIntVector size,
+		const FVector position,
+		const uint8 current_surface_size
+	);
+
+	static int8 ProcessBlockForDepthSurface(
+		const Block::Face direction,
+		const TArray<bool> surface,
+		const TObjectPtr<UVoxuelChunkGeometry> geometry,
+		const FIntVector size,
+		const FVector position,
+		const uint8 current_surface_size
+	);
+
+	static uint16 ProcessDepthSurfaces(
+		const TArray<bool> surface,
+		const TObjectPtr<UVoxuelChunkGeometry> geometry,
+		const FIntVector size,
+		const FVector position,
+		const uint8 width,
+		const uint16 depth
+	);
 };
 
