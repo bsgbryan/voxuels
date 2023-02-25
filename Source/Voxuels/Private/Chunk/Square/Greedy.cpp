@@ -20,27 +20,30 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 	const TArray<bool> surface,
 	const FIntVector size
 ) const {
-	uint8 x = 0;
-	uint8 y = 0;
-	uint8 z = size.Z;
+	int8 z = static_cast<int8>(size.Z);
 
 	while (--z > -1) {
-		TArray<int8> _faces = TArray<int8>();
-		_faces.SetNum(size.X * size.Y);
+		TArray<uint8> _faces = TArray<uint8>();
+		_faces.SetNum(size.Y * size.X);
 		
-		for (int i = 0; i < size.X * size.Y;) {
-			uint8 _width = 0;
-
+		uint8 x = 0;
+		uint8 y = 0;
+		
+		for (uint16 i = 0; i < size.Y * size.X;) {
 #pragma region Width Processing
+			uint8 _width							= 0;
 			uint8 _back_surface_width = 0;
+
+			uint8  _y			=  y + _width;
+			uint16 _index = _y + (size.Y * x);
 			
 			while (
-				x < size.X																						 &&
-				y + _width < size.Y																		 &&
-				(_faces[(y + _width) + (size.Y * x)] & Processed) == 0 &&
-				surface[GetBlockMeshIndex(size, FVector(x, y + _width, z))]
+				 x < size.X												&&
+				_y < size.Y												&&
+				(_faces[_index] & Processed) == 0 &&
+				surface[GetBlockMeshIndex(size, FVector(x, _y, z))]
 			) {
-				_faces[(y + _width) + (size.Y * x)] |= Processed;
+				_faces[_index] |= Processed;
 
 				// This builds up the Surface size, and renders the Back Surface if
 				// a gap is encountered
@@ -52,8 +55,9 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 					FVector(x, y + _width, z),
 					_back_surface_width
 				);
-				
-				++_width;
+
+				_y		 =  y + ++_width;
+				_index = _y + (size.Y * x);
 			}
 
 			// Render the Back Surface built up after any gap encountered above,
@@ -102,7 +106,7 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 					}
 
 					if (!_depth_limit_reached) {
-						const uint16 _result = ProcessDepthSurfaces(
+						const uint16 __result = ProcessDepthSurfaces(
 							surface,
 							geometry,
 							size,
@@ -111,8 +115,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 							(_left_surface_size << 8) | _right_surface_size
 						);
 
-						_left_surface_size  += static_cast<uint8>(_result >> 8);
-						_right_surface_size += static_cast<uint8>(_result);
+						_left_surface_size  += static_cast<uint8>(__result >> 8);
+						_right_surface_size += static_cast<uint8>(__result);
 					
 						++_depth;
 					}
