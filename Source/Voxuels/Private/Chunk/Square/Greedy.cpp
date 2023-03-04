@@ -5,184 +5,174 @@
 #include "Chunk/Square/VoxuelChunkSquareGreedy.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 
-enum OpenSide : uint8 {
-	Processed = 1 << 1,
-	Front 		= 1 << 2,
-	Back  		= 1 << 3,
-	Left  		= 1 << 4,
-	Right 		= 1 << 5,
-	Up				= 1 << 6,
-	Down  		= 1 << 7
-};
+void AVoxuelChunkSquareGreedy::GenerateMesh() {
+	TArray<bool> _processed;
+	_processed.SetNum(Dimensions.Y * Dimensions.X * Dimensions.Z);
+	
+	for (int16 i = 0, x = 0, y = 0, z = Dimensions.Z - 1; i < Dimensions.Y * Dimensions.X;) {
+		uint8 _width							 = 0;
+		uint8 _back_surface_width  = 0;
+		uint8 _front_surface_width = 0;
 
-void AVoxuelChunkSquareGreedy::GenerateMesh(
-	const TObjectPtr<UVoxuelChunkGeometry> geometry,
-	const TArray<bool> surface,
-	const FIntVector size
-) const {
-	int8 z = static_cast<int8>(size.Z);
+		uint8 _y			=  y + _width;
+		int		_index = GetBlockMeshIndex(FVector(x, _y, z));
 
-	while (--z > -1) {
-		TArray<uint8> _faces = TArray<uint8>();
-		_faces.SetNum(size.Y * size.X);
-		
-		uint8 x = 0;
-		uint8 y = 0;
-		
-		for (uint16 i = 0; i < size.Y * size.X;) {
-#pragma region Width Processing
-			uint8 _width							= 0;
-			uint8 _back_surface_width = 0;
+		while (
+			 x < Dimensions.X												 &&
+			_y < Dimensions.Y												 &&
+			Surface[_index] & Block::Surface::Exists &&
+			!_processed[_y + (Dimensions.Y * x)]
+		) {
+			_back_surface_width += ProcessBlockForWidthSurface(
+				Block::Face::Back,
+				FVector(x, y + _width, z),
+				_back_surface_width
+			);
 
-			uint8  _y			=  y + _width;
-			uint16 _index = _y + (size.Y * x);
+			_front_surface_width += ProcessBlockForWidthSurface(
+				Block::Face::Front,
+				FVector(x - 1, y + _width, z),
+				_front_surface_width
+			);
+
+			_y		 =  y + ++_width;
+			_index = GetBlockMeshIndex(FVector(x, _y, z));
+		}
+
+		if (_back_surface_width)
+			RenderWidthSurface(
+				Block::Face::Back,
+				_back_surface_width,
+				FVector(x, y + _width - _back_surface_width, z)
+			);
+
+		if (_front_surface_width)
+			RenderWidthSurface(
+				Block::Face::Front,
+				_front_surface_width,
+				FVector(x - 1, y + _width - _front_surface_width, z)
+			);
+
+		if (_width > 0) {
+			uint8 _left_surface_size  = 0;
+			uint8 _right_surface_size = 0;
 			
+			uint8 _depth 							 = 1;
+			bool  _depth_limit_reached = false;
+			
+			const uint16 _result = ProcessDepthSurfaces(
+					FVector(x, y, z),
+					_width - 1,
+					(_left_surface_size << 8) | _right_surface_size,
+					_processed
+				);
+
+			_left_surface_size  += static_cast<int8>(_result >> 8);
+			_right_surface_size += static_cast<int8>(_result);
+
 			while (
-				 x < size.X												&&
-				_y < size.Y												&&
-				(_faces[_index] & Processed) == 0 &&
-				surface[GetBlockMeshIndex(size, FVector(x, _y, z))]
+				!_depth_limit_reached &&
+				_depth + x < Dimensions.X
 			) {
-				_faces[_index] |= Processed;
+				for (int d = 0; d < _width; d++)
+					if (!(Surface[GetBlockMeshIndex(FVector(x + _depth, y + d, z))] & Block::Surface::Exists)) {
+						_depth_limit_reached = true;
+			
+						break;
+					}
 
-				// This builds up the Surface size, and renders the Back Surface if
-				// a gap is encountered
-				_back_surface_width = ProcessBlockForWidthSurface(
-					Block::Face::Back,
-					surface,
-					geometry,
-					size,
-					FVector(x, y + _width, z),
-					_back_surface_width
-				);
-
-				_y		 =  y + ++_width;
-				_index = _y + (size.Y * x);
-			}
-
-			// Render the Back Surface built up after any gap encountered above,
-			// if necessary
-			if (_back_surface_width)
-				RenderWidthSurface(
-					Block::Face::Back,
-					_back_surface_width,
-					FVector(x, y + _width - _back_surface_width, z),
-					geometry
-				);
-#pragma endregion
-
-#pragma region Depth Processing
-			if (_width > 0) {
-				uint8 _left_surface_size  = 0;
-				uint8 _right_surface_size = 0;
-				
-				uint8 _depth 							 = 1;
-				bool  _depth_limit_reached = false;
-				
-				const uint16 _result = ProcessDepthSurfaces(
-						surface,
-						geometry,
-						size,
+				if (!_depth_limit_reached) {
+					for (uint8 w = 0; w < _width; w++)
+						_processed[(y + w) + (Dimensions.Y * (x + _depth))] = true;
+					
+					const uint16 __result = ProcessDepthSurfaces(
 						FVector(x + _depth, y, z),
 						_width - 1,
-						(_left_surface_size << 8) | _right_surface_size
+						(_left_surface_size << 8) | _right_surface_size,
+						_processed
 					);
 
-				_left_surface_size  += static_cast<int8>(_result >> 8);
-				_right_surface_size += static_cast<int8>(_result);
-
-				while (!_depth_limit_reached && _depth + x < size.X) {
-					for (int d = 0; d < _width; d++) {
-						if (!surface[GetBlockMeshIndex(size, FVector(x + _depth, y + d, z))]) {
-							_depth_limit_reached = true;
-
-							for (int j = 0; j <= d; j++)
-								_faces[(y + j) + (size.Y * (x + _depth))] &= ~Processed;
+					_left_surface_size  += static_cast<int8>(__result >> 8);
+					_right_surface_size += static_cast<int8>(__result);
 				
-							break;
-						}
+					++_depth;
+				}
+				else {
+					uint8 _front_surface_size = 0;
 
-						_faces[(y + d) + (size.Y * (x + _depth))] |= Processed;
-					}
-
-					if (!_depth_limit_reached) {
-						const uint16 __result = ProcessDepthSurfaces(
-							surface,
-							geometry,
-							size,
-							FVector(x + _depth, y, z),
-							_width - 1,
-							(_left_surface_size << 8) | _right_surface_size
+					for (uint8 f = 0; f < _width; f++)
+						_front_surface_size += ProcessBlockForWidthSurface(
+							Block::Face::Front,
+							FVector(x + _depth - 1, y + f, z),
+							_front_surface_size
 						);
 
-						_left_surface_size  += static_cast<uint8>(__result >> 8);
-						_right_surface_size += static_cast<uint8>(__result);
-					
-						++_depth;
-					}
-					else {
-						uint8 _front_surface_size = 0;
-
-						for (uint8 f = 0; f <= _width; f++)
-							_front_surface_size = ProcessBlockForWidthSurface(
-								Block::Face::Front,
-								surface,
-								geometry,
-								size,
-								FVector(x + _depth - 1, y + f, z),
-								_front_surface_size
-							);
-
-						if (_front_surface_size)
-							RenderWidthSurface(
-								Block::Face::Front,
-								_front_surface_size,
-								FVector(x + _depth - 1, y + _width, z),
-								geometry
-							);
-					}
+					if (_front_surface_size)
+						RenderWidthSurface(
+							Block::Face::Front,
+							_front_surface_size,
+							FVector(x + _depth - 1, y + _width - _front_surface_size, z)
+						);
 				}
+			}
+		
+			if (_left_surface_size)
+				RenderDepthSurface(
+					Block::Face::Left,
+					_left_surface_size,
+					FVector(x + _depth - _left_surface_size, y, z)
+				);
+
+			if (_right_surface_size)
+				RenderDepthSurface(
+					Block::Face::Right,
+					_right_surface_size,
+					FVector(x + _depth - _right_surface_size, y + _width - 1, z)
+				);
+
+			if (_depth + x == Dimensions.X) {
+				uint8 _front_surface_size = 0;
+
+				for (uint8 f = 0; f < _width; f++)
+					_front_surface_size = ProcessBlockForWidthSurface(
+							Block::Face::Front,
+							FVector(x + _depth - 1, y + f, z),
+							_front_surface_size
+						);
+
+				if (_front_surface_size)
+					RenderWidthSurface(
+						Block::Face::Front,
+						_front_surface_size,
+						FVector(x + _depth - 1, y + _width - _front_surface_size, z)
+					);
+			}
 			
-				if (_left_surface_size)
-					RenderDepthSurface(
-						Block::Face::Left,
-						_left_surface_size,
-						FVector(x + _depth - _left_surface_size, y, z),
-						geometry
-					);
+			if (Surface[GetBlockMeshIndex(FVector(x, y, z))] & Block::Surface::Up)
+				Geometry->Add(
+					Block::Face::Up,
+					FVector(x, y, z),
+					FIntVector3(_depth == 0 ? 0 : _depth - 1, _width == 0 ? 0 : _width - 1, 0)
+				); 
+		}
 
-				if (_right_surface_size)
-					RenderDepthSurface(
-						Block::Face::Right,
-						_right_surface_size,
-						FVector(x + _depth - _right_surface_size, y, z),
-						geometry
-					);
+		y += _width > 0 ? _width : 1;
+		i += _width > 0 ? _width : 1;
 
-#pragma region Render Top Surface
-				if (_depth - 1 > 0)
-					geometry->Add(
-						Block::Face::Up,
-						FVector(x, y, z),
-						FIntVector3(_depth == 0 ? 0 : _depth - 1, _width == 0 ? 0 : _width - 1, 0)
-					);
-#pragma endregion 
-			}
-#pragma endregion 
+		if (y == Dimensions.Y) {
+			++x;
+			
+			y = 0;
+		}
 
-#pragma region Index Management
-			y += _width > 0 ? _width : 1;
-			i += _width > 0 ? _width : 1;
+		if (x == Dimensions.X)
+			x = 0;
 
-			if (y == size.Y) {
-				++x;
-				
-				y = 0;
-			}
+		if (i > 0 && x == 0 && y == 0) {
+			--z;
 
-			if (x == size.X)
-				x = 0;
-#pragma endregion 
+			if (z > -1)
+				i = 0;
 		}
 	}
 }
@@ -190,10 +180,9 @@ void AVoxuelChunkSquareGreedy::GenerateMesh(
 void AVoxuelChunkSquareGreedy::RenderWidthSurface(
 	const Block::Face direction,
 	const uint8 size,
-	const FVector position,
-	const TObjectPtr<UVoxuelChunkGeometry> geometry
-) {
-	geometry->Add(
+	const FVector& position
+) const {
+	Geometry->Add(
 		direction,
 		position,
 		FIntVector3(0, size - 1, 0)
@@ -203,10 +192,9 @@ void AVoxuelChunkSquareGreedy::RenderWidthSurface(
 void AVoxuelChunkSquareGreedy::RenderDepthSurface(
 	const Block::Face direction,
 	const uint8 size,
-	const FVector position,
-	const TObjectPtr<UVoxuelChunkGeometry> geometry
-) {
-	geometry->Add(
+	const FVector& position
+) const {
+	Geometry->Add(
 		direction,
 		position,
 		FIntVector3(size - 1, 0, 0)
@@ -215,22 +203,20 @@ void AVoxuelChunkSquareGreedy::RenderDepthSurface(
 
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 	const Block::Face direction,
-	const TArray<bool> surface,
-	const TObjectPtr<UVoxuelChunkGeometry> geometry,
-	const FIntVector size,
-	const FVector position,
+	const FVector& position,
 	const uint8 current_surface_size
 ) {
-	const float _x = position.X + (direction == Block::Face::Front ? 1 : -1);
-
-	if (const FVector _test = FVector(_x, position.Y, position.Z); !surface[GetBlockMeshIndex(size, _test)])
+	if (
+		const uint8	_value = Surface[GetBlockMeshIndex(position)];
+		_value & (direction == Block::Face::Front ? Block::Surface::Front : Block::Surface::Back)
+	)
 		return 1;
 
 	if (current_surface_size) {
 		const float		_y = position.Y - current_surface_size;
 		const FVector _p = FVector(position.X, _y, position.Z);
 		
-		RenderWidthSurface(direction, current_surface_size, _p, geometry);
+		RenderWidthSurface(direction, current_surface_size, _p);
 
 		return -current_surface_size;
 	}
@@ -240,22 +226,23 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 	const Block::Face direction,
-	const TArray<bool> surface,
-	const TObjectPtr<UVoxuelChunkGeometry> geometry,
-	const FIntVector size,
-	const FVector position,
-	const uint8 current_surface_size
+	const FVector& position,
+	const uint8 current_surface_size,
+	TArray<bool> processed
 ) {
-	const float _y = position.Y + (direction == Block::Face::Right ? 1 : -1);
+	processed[position.Y + (Dimensions.Y * position.X)] = true;
 	
-	if (const FVector _test = FVector(position.X, _y, position.Z); !surface[GetBlockMeshIndex(size, _test)])
+	if (
+		const uint8 _value = Surface[GetBlockMeshIndex(position)];
+		_value & (direction == Block::Face::Left ? Block::Surface::Left : Block::Surface::Right)
+	)
 		return 1;
 	
 	if (current_surface_size) {
 		const float		_x = position.X - current_surface_size;
 		const FVector _p = FVector(_x, position.Y, position.Z);
 		
-		RenderDepthSurface(Block::Face::Left, current_surface_size, _p, geometry);
+		RenderDepthSurface(direction, current_surface_size, _p);
 
 		return -current_surface_size;
 	}
@@ -264,26 +251,20 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 }
 
 uint16 AVoxuelChunkSquareGreedy::ProcessDepthSurfaces(
-	const TArray<bool> surface,
-	const TObjectPtr<UVoxuelChunkGeometry> geometry,
-	const FIntVector size,
-	const FVector position,
+	const FVector& position,
 	const uint8 width,
-	const uint16 depth
-) {
+	const uint16 depth,
+	const TArray<bool> processed
+) {	
 	return (ProcessBlockForDepthSurface(
 		Block::Face::Left,
-		surface,
-		geometry,
-		size,
 		position,
-		static_cast<uint8>(depth >> 8)
+		static_cast<uint8>(depth >> 8),
+		processed
 		) << 8) | (ProcessBlockForDepthSurface(
 			Block::Face::Right,
-			surface,
-			geometry,
-			size,
 			FVector(position.X, position.Y + width, position.Z),
-			static_cast<uint8>(depth)
+			static_cast<uint8>(depth),
+			processed
 		) & 0xff);
 }

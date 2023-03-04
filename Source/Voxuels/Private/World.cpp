@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "FastNoiseWrapper.h"
 #include "VoxuelsLogger.h"
 #include "VoxuelWorld.h"
 #include "Chunk/VoxuelChunkBase.h"
@@ -38,6 +38,8 @@ void AVoxuelWorld::Clear() {
 
 	Chunks.Empty();
 
+	FlushPersistentDebugLines(GetWorld());
+
 	RenderEnvironmentInitialized = false;
 }
 
@@ -66,14 +68,18 @@ bool AVoxuelWorld::DoRenderChunk(const int y, const int x) {
 
 		const auto _chunk = GetWorld()->SpawnActor<AVoxuelChunkBase>(Chunk, _location, FRotator::ZeroRotator);
 
-		_chunk->Generate(
-			Threaded,
-			ChunkDimensions,
-			Seed,
-			Frequency,
-			RenderFromBlock,
-			RenderToBlock
-		);
+		FRenderExtent _window;
+
+		_window.From = RenderFromBlock;
+		_window.To   = RenderToBlock;
+		
+		_chunk->Threaded	 = Threaded;
+		_chunk->Dimensions = ChunkDimensions;
+		_chunk->Window		 = _window;
+		
+		_chunk->Noise->SetupFastNoise(EFastNoise_NoiseType::Perlin, Seed, Frequency);
+		
+		_chunk->Generate();
 
 		Chunks[y + (DrawDistance.Y * x)] = _chunk;
 

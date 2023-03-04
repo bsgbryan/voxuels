@@ -12,6 +12,17 @@ namespace Block {
 		Down
 	};
 
+	enum Surface : uint8 {
+		Exists = 1 << 0,
+		None	 = 1 << 1,
+		Front  = 1 << 2,
+		Back   = 1 << 3,
+		Left   = 1 << 4,
+		Right  = 1 << 5,
+		Up		 = 1 << 6,
+		Down   = 1 << 7
+	};
+
 	constexpr Face AllFaces[6] = {
 		Face::Front,
 		Face::Back,

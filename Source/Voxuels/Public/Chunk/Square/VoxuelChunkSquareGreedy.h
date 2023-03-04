@@ -6,57 +6,49 @@
 #include "Chunk/VoxuelChunkBase.h"
 #include "VoxuelChunkSquareGreedy.generated.h"
 
+namespace Block {
+	enum class Face;
+	enum class Type;
+}
+
 UCLASS()
 class VOXUELS_API AVoxuelChunkSquareGreedy final : public AVoxuelChunkBase {
 	GENERATED_BODY()
 	
 public:
-	virtual void GenerateMesh(
-		const TObjectPtr<UVoxuelChunkGeometry> geometry,
-		TArray<bool> surface,
-		const FIntVector size
-	) const override;
+	virtual void GenerateMesh() override;
 
 private:
-	static void RenderWidthSurface(
+	void RenderWidthSurface(
 		const Block::Face direction,
 		const uint8 size,
-		const FVector position,
-		const TObjectPtr<UVoxuelChunkGeometry> geometry
-	);
+		const FVector& position
+	) const;
 
-	static void RenderDepthSurface(
+	void RenderDepthSurface(
 		const Block::Face direction,
 		const uint8 size,
-		const FVector position,
-		const TObjectPtr<UVoxuelChunkGeometry> geometry
-	);
+		const FVector& position
+	) const;
 	
-	static int8 ProcessBlockForWidthSurface(
+	int8 ProcessBlockForWidthSurface(
 		const Block::Face direction,
-		const TArray<bool> surface,
-		const TObjectPtr<UVoxuelChunkGeometry> geometry,
-		const FIntVector size,
-		const FVector position,
+		const FVector& position,
 		const uint8 current_surface_size
 	);
 
-	static int8 ProcessBlockForDepthSurface(
+	int8 ProcessBlockForDepthSurface(
 		const Block::Face direction,
-		const TArray<bool> surface,
-		const TObjectPtr<UVoxuelChunkGeometry> geometry,
-		const FIntVector size,
-		const FVector position,
-		const uint8 current_surface_size
+		const FVector& position,
+		const uint8 current_surface_size,
+		TArray<bool> processed
 	);
 
-	static uint16 ProcessDepthSurfaces(
-		const TArray<bool> surface,
-		const TObjectPtr<UVoxuelChunkGeometry> geometry,
-		const FIntVector size,
-		const FVector position,
+	uint16 ProcessDepthSurfaces(
+		const FVector& position,
 		const uint8 width,
-		const uint16 depth
+		const uint16 depth,
+		const TArray<bool> processed
 	);
 };
 

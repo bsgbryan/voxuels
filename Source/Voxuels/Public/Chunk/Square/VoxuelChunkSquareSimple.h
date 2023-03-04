@@ -11,10 +11,5 @@ class VOXUELS_API AVoxuelChunkSquareSimple final : public AVoxuelChunkBase {
 	GENERATED_BODY()
 	
 public:
-
-	virtual void GenerateMesh(
-		TObjectPtr<UVoxuelChunkGeometry> geometry,
-		TArray<bool> surface,
-		FIntVector size
-	) const override;
+	virtual void GenerateMesh() override;
 };

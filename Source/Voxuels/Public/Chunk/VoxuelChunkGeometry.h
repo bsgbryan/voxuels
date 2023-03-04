@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "VoxuelChunkGeometry.generated.h"
 
 namespace Block {
@@ -16,22 +17,23 @@ class VOXUELS_API UVoxuelChunkGeometry final : public UObject {
 public:
 	UVoxuelChunkGeometry();
 	
-	TArray<int>		  Triangles;
-	TArray<FVector>   Vertices;
-	TArray<FVector>	  Normals;
-	TArray<FVector2D> UVs;
+	TArray<int>							 Triangles;
+	TArray<FVector>					 Vertices;
+	TArray<FVector>					 Normals;
+	TArray<FVector2D>				 UVs;
+	TArray<FProcMeshTangent> Tangents;
 
 	int VertexCount = 0;
 
 	void Add(
 		Block::Face face,
-		const FVector position,
-		const FIntVector3 dimensions = FIntVector3(0, 0, 0)
+		const FVector& position,
+		const FIntVector3& dimensions = FIntVector3(0, 0, 0)
 	);
 
 	static TArray<FVector> GenerateQuad(
 		Block::Face face,
-		const FVector position,
-		const FIntVector3 dimensions = FIntVector3(0, 0, 0)
+		const FVector& position,
+		const FIntVector3& dimensions = FIntVector3(0, 0, 0)
 	);
 };

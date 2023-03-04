@@ -1,22 +1,31 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
+#include "Kismet/KismetMathLibrary.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 #include "Block.h"
+#include "MatrixTypes.h"
 
 UVoxuelChunkGeometry::UVoxuelChunkGeometry() {}
 
 void UVoxuelChunkGeometry::Add(
 	const Block::Face face,
-	const FVector position,
-	const FIntVector3 dimensions
+	const FVector& position,
+	const FIntVector3& dimensions
 ) {	
 	Vertices.Append(GenerateQuad(face, position, dimensions));
+
+	const FVector _v1 = Vertices[VertexCount];
+	const FVector _v2 = Vertices[VertexCount + 2];
+	const FVector _v3 = Vertices[VertexCount + 3];
 	
-	UVs.Append({
-		FVector2D(1,1),
-		FVector2D(1,0),
-		FVector2D(0,0),
-		FVector2D(0,1)
+	const FVector _normal			= UKismetMathLibrary::Cross_VectorVector(_v1 - _v3, _v2 - _v3);
+	const FVector _normalized = UKismetMathLibrary::Normal(_normal, 0.1f);
+	
+	Normals.Append({
+		_normalized,
+		_normalized,
+		_normalized,
+		_normalized
 	});
 	
 	Triangles.Append({
@@ -27,14 +36,21 @@ void UVoxuelChunkGeometry::Add(
 		VertexCount + 1,
 		VertexCount
 	});
+	
+	UVs.Append({
+		FVector2D(1,1),
+		FVector2D(1,0),
+		FVector2D(0,0),
+		FVector2D(0,1)
+	});
 
 	VertexCount += 4;
 }
 
 TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
 	const Block::Face face,
-	const FVector position,
-	const FIntVector3 dimensions
+	const FVector& position,
+	const FIntVector3& dimensions
 ) {
 	TArray<FVector> _vertices;
 	_vertices.SetNum(4);

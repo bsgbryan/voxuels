@@ -3,13 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Helpers.h"
 #include "GameFramework/Actor.h"
 #include "VoxuelChunkBase.generated.h"
-
-namespace Block {
-	enum class Face;
-	enum class Type;
-}
 
 class UVoxuelChunkGeometry;
 class UFastNoiseWrapper;
@@ -22,42 +18,37 @@ class VOXUELS_API AVoxuelChunkBase : public AActor {
 public:	
 	AVoxuelChunkBase();
 
-	void Generate(
-		bool threaded,
-		FIntVector size,
-		int seed,
-		float frequency,
-		const FIntVector from = FIntVector::NoneValue,
-		const FIntVector to = FIntVector::NoneValue
-	) const;
-
-protected:
-	TObjectPtr<UProceduralMeshComponent> Mesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
 	TObjectPtr<UFastNoiseWrapper> Noise;
 
-	static TArray<bool> GenerateSurface(
-		FVector location,
-		TObjectPtr<UFastNoiseWrapper> noise,
-		FIntVector size,
-		int seed,
-		float frequency,
-		const FIntVector from = FIntVector::NoneValue,
-		const FIntVector to = FIntVector::NoneValue
-	);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
+	bool Threaded = true;
 
-	virtual void GenerateMesh(
-		TObjectPtr<UVoxuelChunkGeometry> geometry,
-		TArray<bool> surface,
-		FIntVector size
-	) const;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
+	FIntVector Dimensions = FIntVector(32, 32, 32);
 
-	static int GetBlockIndex(
-		FIntVector size,
-		FVector position
-	);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
+	FRenderExtent Window;
 
-	static int GetBlockMeshIndex(
-		const FIntVector size,
-		const FVector position
+	void Generate();
+
+protected:
+	TObjectPtr<UVoxuelChunkGeometry> Geometry;
+	TObjectPtr<UProceduralMeshComponent> Mesh;
+	TArray<uint8> Surface;
+
+	virtual void GenerateMesh();
+
+	void GenerateSurface();
+
+	int GetBlockIndex(const FVector& position) const;
+	int GetBlockMeshIndex(const FVector& position) const;
+
+private:	
+	bool ProcessNeighbor(
+		const bool width,
+		const FVector2D& position,
+		const uint8 value,
+		const uint8 offset
 	);
 };

@@ -4,24 +4,36 @@
 #include "Block.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 
-void AVoxuelChunkSquareSimple::GenerateMesh(
-	const TObjectPtr<UVoxuelChunkGeometry> geometry,
-	TArray<bool> surface,
-	const FIntVector size
-) const {
-	for (int i = 0, x = -1, z = -1; i < size.X * size.Y * size.Z; i++) {
-		const int y = i % size.Y;
+void AVoxuelChunkSquareSimple::GenerateMesh() {
+	for (int i = 0, x = -1, z = -1; i < Dimensions.X * Dimensions.Y * Dimensions.Z; i++) {
+		const int y = i % Dimensions.Y;
 
-		if (i % (size.X * size.Y) == 0)
+		if (i % (Dimensions.X * Dimensions.Y) == 0)
 			x = 0;
 		else
-			x = i % size.Y == 0 ? x + 1 : x;
+			x = i % Dimensions.Y == 0 ? x + 1 : x;
 		
-		z = i % (size.X * size.Y) == 0 ? z + 1 : z;
+		z = i % (Dimensions.X * Dimensions.Y) == 0 ? z + 1 : z;
 
-		if (const auto position = FVector(x, y, z); surface[GetBlockMeshIndex(size, position)])
-			for (const auto face : Block::AllFaces)
-				if (const auto _neighbor = position + Block::Vectors[static_cast<int>(face)]; surface[GetBlockMeshIndex(size, _neighbor)] == false)
-					geometry->Add(face, position);
+		const FVector _position = FVector(x, y, z);
+		const uint8   _current  = Surface[GetBlockMeshIndex(_position)];
+
+		if ((_current & Block::Surface::Front) == Block::Surface::Front)
+			Geometry->Add(Block::Face::Front, _position);
+		
+		if ((_current & Block::Surface::Back) == Block::Surface::Back)
+			Geometry->Add(Block::Face::Back, _position);
+		
+		if ((_current & Block::Surface::Left) == Block::Surface::Left)
+			Geometry->Add(Block::Face::Left, _position);
+		
+		if ((_current & Block::Surface::Right) == Block::Surface::Right)
+			Geometry->Add(Block::Face::Right, _position);
+
+		if ((_current & Block::Surface::Up) == Block::Surface::Up)
+			Geometry->Add(Block::Face::Up, _position);
+
+		if ((_current & Block::Surface::Down) == Block::Surface::Down)
+			Geometry->Add(Block::Face::Down, _position);
 	}
 }
