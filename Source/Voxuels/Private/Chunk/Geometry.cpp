@@ -36,12 +36,34 @@ void UVoxuelChunkGeometry::Add(
 		VertexCount + 1,
 		VertexCount
 	});
+
+	float _depth  = 1;
+	float _width  = 1;
+	float _offset_depth = 0;
+	float _offset_width = 0;
+
+	if (face == Block::Face::Up) {
+		_depth = dimensions.X + 1;
+		_width = dimensions.Y + 1;
+		_offset_depth = static_cast<int>(position.X) % 2;
+		_offset_width = static_cast<int>(position.Y) % 2;
+	} else if (face == Block::Face::Front || face == Block::Face::Back) {
+		_depth = 1;
+		_width = dimensions.Y + 1;
+		_offset_depth = static_cast<int>(position.Z) % 2;
+		_offset_width = static_cast<int>(position.Y) % 2;
+	}  else if (face == Block::Face::Left || face == Block::Face::Right) {
+		_depth = 1;
+		_width = dimensions.X + 1;
+		_offset_depth = static_cast<int>(position.Z) % 2;
+		_offset_width = static_cast<int>(position.X) % 2;
+	}
 	
 	UVs.Append({
-		FVector2D(1,1),
-		FVector2D(1,0),
-		FVector2D(0,0),
-		FVector2D(0,1)
+		FVector2D(_offset_depth, _offset_width + _width),
+		FVector2D(_offset_depth, _offset_width),
+		FVector2D(_offset_depth + _depth, _offset_width),
+		FVector2D(_offset_depth + _depth, _offset_width + _width)
 	});
 
 	VertexCount += 4;

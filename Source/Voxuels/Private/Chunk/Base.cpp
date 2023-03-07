@@ -87,30 +87,28 @@ void AVoxuelChunkBase::GenerateSurface() {
 			// 	);
 			// #endif
 
-			bool _filled_in = false;
+			bool _left_filled_in	 = false;
+			bool _bottom_filled_in = false;
 			int  _offset		= 1;
 
-			while (y > 0 && x > 0 && !_filled_in) {
-				const bool _left_neighbor_exists   = (Surface[GetBlockIndex(FVector(x,		  y - 1, _value))] & Block::Surface::Exists) == Block::Surface::Exists;
-				const bool _bottom_neighbor_exists = (Surface[GetBlockIndex(FVector(x - 1, y,	   _value))] & Block::Surface::Exists) == Block::Surface::Exists;
-				
-				if (_left_neighbor_exists && _bottom_neighbor_exists) {
-					_filled_in = true;
-				
+			while (y > 0 && x > 0 && (!_left_filled_in || !_bottom_filled_in)) {
+				_left_filled_in   = (Surface[GetBlockIndex(FVector(x,		  y - 1, _value))] & Block::Surface::Up) == Block::Surface::Up;
+				_bottom_filled_in = (Surface[GetBlockIndex(FVector(x - 1, y,	   _value))] & Block::Surface::Up) == Block::Surface::Up;
+
+				if (_left_filled_in && _bottom_filled_in)
 					continue;
-				}
 			
 				if (_value + _offset < Dimensions.Z && _value - _offset > -1) {
-					if (!_left_neighbor_exists)
-						_filled_in = ProcessNeighbor(
+					if (!_left_filled_in)
+						_left_filled_in = ProcessNeighbor(
 							true,
 							FVector2D(x, y),
 							_value,
 							_offset
 						);
 
-					if (!_bottom_neighbor_exists)
-						_filled_in = ProcessNeighbor(
+					if (!_bottom_filled_in)
+						_bottom_filled_in = ProcessNeighbor(
 							false,
 							FVector2D(x, y),
 							_value,
@@ -119,8 +117,10 @@ void AVoxuelChunkBase::GenerateSurface() {
 					
 					++_offset;
 				}
-				else
-					_filled_in = true;
+				else {
+					_left_filled_in		= true;
+					_bottom_filled_in = true;
+				}
 			}
 		}
 	}
@@ -134,14 +134,14 @@ int AVoxuelChunkBase::GetBlockIndex(const FVector& position) const {
 	return
 		 position.Y +
 		(position.X *  (Dimensions.Y + 2)) +
-		(position.Z * ((Dimensions.X + 2) * (Dimensions.Y + 2)));
+		(position.Z * ((Dimensions.Y + 2) * (Dimensions.X + 2)));
 }
 
 int AVoxuelChunkBase::GetBlockMeshIndex(const FVector& position) const {
 	return
 		 (position.Y + 1) +
 		((position.X + 1) *  (Dimensions.Y + 2)) +
-		 (position.Z			* ((Dimensions.X + 2) * (Dimensions.Y + 2)));
+		 (position.Z			* ((Dimensions.Y + 2) * (Dimensions.X + 2)));
 }
 
 bool AVoxuelChunkBase::ProcessNeighbor(
@@ -153,18 +153,57 @@ bool AVoxuelChunkBase::ProcessNeighbor(
 	const uint8 _y = position.Y + (width ? -1 :  0);
 	const uint8 _x = position.X + (width ?  0 : -1);
 
+	const uint8 _up		= Surface[GetBlockIndex(FVector(_x, _y, value + offset))];
+	const uint8 _down = Surface[GetBlockIndex(FVector(_x, _y, value - offset))];
+
 	bool _filled_in = false;
 	
-	if (Surface[GetBlockIndex(FVector(_x, _y, value + offset))] & Block::Surface::Exists) {
-		for (int h = value + 1; h <= value + offset; h++)
-			Surface[GetBlockIndex(FVector(_x, _y, h))] |= width ? Block::Surface::Right : Block::Surface::Front;
+	if ((_up & Block::Surface::Up) == Block::Surface::Up) {
+		for (int h = value + 1; h <= value + offset; h++) {
+			const FVector _p = FVector(_x, _y, h);
+			
+			Surface[GetBlockIndex(_p)] |= (Block::Surface::Exists | (width ? Block::Surface::Right : Block::Surface::Front));
+
+			// #if UE_EDITOR
+			// 	const FVector _location = GetActorLocation();
+			// 	const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
+			// 	
+			// 	DrawDebugPoint(
+			// 		GetWorld(),
+			// 		(FVector(position.X, position.Y, h) * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
+			// 		10,
+			// 		FColor(0, width ? 0 : _shade, width ? _shade : 0, 255),
+			// 		true,
+			// 		-1,
+			// 		-2
+			// 	);
+			// #endif
+		}
 
 		_filled_in = true;
 	}
 
-	if (Surface[GetBlockIndex(FVector(_x, _y, value - offset))] & Block::Surface::Exists) {
-		for (int h = value; h > value - offset; h--)
-			Surface[GetBlockIndex(FVector(position.X, position.Y, h))] |= width ? Block::Surface::Left : Block::Surface::Back;
+	if ((_down & Block::Surface::Up) == Block::Surface::Up) {
+		for (int h = value; h > value - offset; h--) {
+			const FVector _p = FVector(position.X, position.Y, h);
+
+			Surface[GetBlockIndex(_p)] |= (Block::Surface::Exists | (width ? Block::Surface::Left : Block::Surface::Back));
+	
+			// #if UE_EDITOR
+			// 	const FVector _location = GetActorLocation();
+			// 	const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
+			//
+			// 	DrawDebugPoint(
+			// 		GetWorld(),
+			// 		(_p * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
+			// 		10,
+			// 		FColor(width ? _shade : 0, width ? 0 : _shade, _shade, 255),
+			// 		true,
+			// 		-1,
+			// 		-2
+			// 	);
+			// #endif
+		}
 
 		_filled_in = true;
 	}

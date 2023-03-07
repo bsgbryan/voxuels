@@ -30,6 +30,13 @@ private:
 		const uint8 size,
 		const FVector& position
 	) const;
+
+	void RenderHeightSurface(
+		const Block::Face direction,
+		const uint8 width,
+		const uint8 depth,
+		const FVector& position
+	) const;
 	
 	int8 ProcessBlockForWidthSurface(
 		const Block::Face direction,
@@ -49,6 +56,19 @@ private:
 		const uint8 width,
 		const uint16 depth,
 		const TArray<bool> processed
+	);
+
+	int8 ProcessBlockForHeightSurface(
+		const Block::Face direction,
+		const FVector& position,
+		const uint8 width
+	);
+
+	int8 ProcessRowForHeightSurface(
+		const Block::Face direction,
+		const FVector& position,
+		const uint8 width,
+		const uint8 depth
 	);
 };
 
