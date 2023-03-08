@@ -72,8 +72,7 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 				const uint16 _result = ProcessDepthSurfaces(
 					FVector(x, y, z),
 					_width - 1,
-					(_left_surface_size << 8) | _right_surface_size,
-					_processed
+					(_left_surface_size << 8) | _right_surface_size
 				);
 
 				_left_surface_size  += static_cast<int8>(_result >> 8);
@@ -97,8 +96,7 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 						const uint16 __result = ProcessDepthSurfaces(
 							FVector(x + _depth, y, z),
 							_width - 1,
-							(_left_surface_size << 8) | _right_surface_size,
-							_processed
+							(_left_surface_size << 8) | _right_surface_size
 						);
 
 						_left_surface_size  += static_cast<int8>(__result >> 8);
@@ -129,18 +127,6 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 								_front_surface_size,
 								FVector(x + _depth - 1, y + _width - _front_surface_size, z)
 							);
-
-						if (_top_surface_width && _top_surface_depth) {
-							RenderHeightSurface(
-								Block::Face::Up,
-								_top_surface_width,
-								_top_surface_depth - 1,
-								FVector(x + _depth - _top_surface_depth, y + _width - _top_surface_width, z)
-							);
-
-							_top_surface_width = 0;
-							_top_surface_depth = 0;
-						}
 					}
 				}
 			
@@ -158,11 +144,11 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 						FVector(x + _depth - _right_surface_size, y + _width - 1, z)
 					);
 
-				if (_top_surface_width && _top_surface_depth)
+				if (_top_surface_width || _top_surface_depth)
 					RenderHeightSurface(
 						Block::Face::Up,
 						_top_surface_width,
-						_top_surface_depth - 1,
+						_top_surface_depth,
 						FVector(x + _depth - _top_surface_depth, y + _width - _top_surface_width, z)
 					);
 
@@ -171,10 +157,10 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 
 					for (uint8 f = 0; f < _width; f++)
 						_front_surface_size += ProcessBlockForWidthSurface(
-								Block::Face::Front,
-								FVector(x + _depth - 1, y + f, z),
-								_front_surface_size
-							);
+							Block::Face::Front,
+							FVector(x + _depth - 1, y + f, z),
+							_front_surface_size
+						);
 
 					if (_front_surface_size)
 						RenderWidthSurface(
@@ -242,7 +228,7 @@ void AVoxuelChunkSquareGreedy::RenderHeightSurface(
 	Geometry->Add(
 		direction,
 		position,
-		FIntVector3(depth, width - 1, 0)
+		FIntVector3(depth - 1, width - 1, 0)
 	);
 }
 
@@ -272,31 +258,11 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 	const Block::Face direction,
 	const FVector& position,
-	const uint8 current_surface_size,
-	TArray<bool> processed
+	const uint8 current_surface_size
 ) {
-	uint8 _depth = 1;
-	uint8 _v = Surface[GetBlockMeshIndex(FVector(position.X, position.Y, position.Z - _depth))];
-
-	while (_v & (direction == Block::Face::Left ? Block::Surface::Left : Block::Surface::Right)) {
-		processed[position.Y + (Dimensions.Y * position.X) + ((position.Z - _depth) * (Dimensions.Y * Dimensions.X))] = true;
-		
-		_v = Surface[GetBlockMeshIndex(FVector(position.X, position.Y, position.Z - ++_depth))];
-	}
-	
-	if (_depth > 1) {
-		Geometry->Add(
-			direction,
-			FVector(position.X, position.Y, position.Z - 1),
-			FIntVector3(0, 0, _depth - 2)
-		);
-	}
-	
-	processed[position.Y + (Dimensions.Y * position.X) + (position.Z * (Dimensions.Y * Dimensions.X))] = true;
-	
 	if (
 		const uint8 _value = Surface[GetBlockMeshIndex(position)];
-		_value & (direction == Block::Face::Left ? Block::Surface::Left : Block::Surface::Right)
+		(_value & (direction == Block::Face::Left ? Block::Surface::Left : Block::Surface::Right)) != 0
 	)
 		return 1;
 
@@ -312,42 +278,19 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 	return 0;
 }
 
-int8 AVoxuelChunkSquareGreedy::ProcessBlockForHeightSurface(
-	const Block::Face direction,
-	const FVector& position,
-	const uint8 width
-) {
-	if (Surface[GetBlockMeshIndex(position)] & Block::Surface::Up)
-		return 1;
-
-	if (width) {
-		const float		_y = position.Y - width;
-		const FVector _p = FVector(position.X, _y, position.Z);
-		
-		RenderHeightSurface(direction, width, 1, _p);
-
-		return -width;
-	}
-
-	return 0;
-}
-
 uint16 AVoxuelChunkSquareGreedy::ProcessDepthSurfaces(
 	const FVector& position,
 	const uint8 width,
-	const uint16 depth,
-	const TArray<bool> processed
+	const uint16 depth
 ) {	
 	return (ProcessBlockForDepthSurface(
 		Block::Face::Left,
 		position,
-		static_cast<uint8>(depth >> 8),
-		processed
+		static_cast<uint8>(depth >> 8)
 		) << 8) | (ProcessBlockForDepthSurface(
 			Block::Face::Right,
 			FVector(position.X, position.Y + width, position.Z),
-			static_cast<uint8>(depth),
-			processed
+			static_cast<uint8>(depth)
 		) & 0xff);
 }
 
@@ -360,9 +303,9 @@ int8 AVoxuelChunkSquareGreedy::ProcessRowForHeightSurface(
 	if (Surface[GetBlockMeshIndex(position)] & Block::Surface::Up)
 		return 1;
 
-	if (width && depth) {
+	if (width || depth) {
 		const float		_y = position.Y - (width - 1);
-		const float   _x = position.X - depth;
+		const float   _x = position.X -  depth;
 		const FVector _p = FVector(_x, _y, position.Z);
 		
 		RenderHeightSurface(direction, width, depth, _p);

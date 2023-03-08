@@ -47,21 +47,13 @@ private:
 	int8 ProcessBlockForDepthSurface(
 		const Block::Face direction,
 		const FVector& position,
-		const uint8 current_surface_size,
-		TArray<bool> processed
+		const uint8 current_surface_size
 	);
 
 	uint16 ProcessDepthSurfaces(
 		const FVector& position,
 		const uint8 width,
-		const uint16 depth,
-		const TArray<bool> processed
-	);
-
-	int8 ProcessBlockForHeightSurface(
-		const Block::Face direction,
-		const FVector& position,
-		const uint8 width
+		const uint16 depth
 	);
 
 	int8 ProcessRowForHeightSurface(
