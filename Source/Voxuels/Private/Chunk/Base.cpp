@@ -29,7 +29,7 @@ void AVoxuelChunkBase::Generate() {
 					render->Geometry->Triangles,
 					render->Geometry->Normals,
 					render->Geometry->UVs,
-					TArray<FColor>(),
+					render->Geometry->Colors,
 					render->Geometry->Tangents,
 					false
 				);
@@ -45,7 +45,7 @@ void AVoxuelChunkBase::Generate() {
 			Geometry->Triangles,
 			Geometry->Normals,
 			Geometry->UVs,
-			TArray<FColor>(),
+			Geometry->Colors,
 			Geometry->Tangents,
 			false
 		);
@@ -53,6 +53,7 @@ void AVoxuelChunkBase::Generate() {
 }
 
 void AVoxuelChunkBase::GenerateSurface() {
+	Geometry->Dimensions = Dimensions;
 	Surface.SetNum((Dimensions.Y + 2) * (Dimensions.X + 2) * Dimensions.Z);
 
 	for (int i = 0, x = -1, _width = Dimensions.Y + 2, _depth = Dimensions.X + 2; i < _width * _depth; i++) {

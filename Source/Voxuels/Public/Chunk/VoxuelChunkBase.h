@@ -30,11 +30,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
 	FRenderExtent Window;
 
+	TObjectPtr<UProceduralMeshComponent> Mesh;
+
 	void Generate();
 
 protected:
 	TObjectPtr<UVoxuelChunkGeometry> Geometry;
-	TObjectPtr<UProceduralMeshComponent> Mesh;
 	TArray<uint8> Surface;
 
 	virtual void GenerateMesh();

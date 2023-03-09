@@ -4,6 +4,7 @@
 #include "Chunk/VoxuelChunkGeometry.h"
 #include "Block.h"
 #include "MatrixTypes.h"
+#include "VoxuelsLogger.h"
 
 UVoxuelChunkGeometry::UVoxuelChunkGeometry() {}
 
@@ -20,6 +21,19 @@ void UVoxuelChunkGeometry::Add(
 	
 	const FVector _normal			= UKismetMathLibrary::Cross_VectorVector(_v1 - _v3, _v2 - _v3);
 	const FVector _normalized = UKismetMathLibrary::Normal(_normal, 0.1f);
+
+	const float _r = FMath::Clamp((abs(_normalized.Y) * 0.5f) + (abs(_normalized.X) * 0.5f), 0.0f, 0.5f) * 2.0f;
+	const float _g = FMath::Clamp((abs(_normalized.X) * 0.5f) + (abs(_normalized.Z) * 0.5f), 0.0f, 0.5f) * 2.0f;
+	const float _b = FMath::Clamp((abs(_normalized.Z) * 0.5f) + (abs(_normalized.Y) * 0.5f), 0.0f, 0.5f) * 2.0f;
+
+	const float _intensity = (position.Z / Dimensions.Z) * 255;
+	
+	const FColor _color = FColor(
+		_r * _intensity,
+		_g * _intensity,
+		_b * _intensity,
+		1
+	);
 	
 	Normals.Append({
 		_normalized,
@@ -35,6 +49,13 @@ void UVoxuelChunkGeometry::Add(
 		VertexCount + 2,
 		VertexCount + 1,
 		VertexCount
+	});
+
+	Colors.Append({
+		_color,
+		_color,
+		_color,
+		_color
 	});
 
 	float _depth  = 1;

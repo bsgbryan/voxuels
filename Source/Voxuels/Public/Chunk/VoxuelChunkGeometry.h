@@ -22,6 +22,9 @@ public:
 	TArray<FVector>					 Normals;
 	TArray<FVector2D>				 UVs;
 	TArray<FProcMeshTangent> Tangents;
+	TArray<FColor>					 Colors;
+
+	FIntVector3 Dimensions;
 
 	int VertexCount = 0;
 

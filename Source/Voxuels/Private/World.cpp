@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FastNoiseWrapper.h"
+#include "ProceduralMeshComponent.h"
 #include "VoxuelsLogger.h"
 #include "VoxuelWorld.h"
 #include "Chunk/VoxuelChunkBase.h"
@@ -78,6 +79,8 @@ bool AVoxuelWorld::DoRenderChunk(const int y, const int x) {
 		_chunk->Window		 = _window;
 		
 		_chunk->Noise->SetupFastNoise(EFastNoise_NoiseType::Perlin, Seed, Frequency);
+
+		_chunk->Mesh->SetMaterial(0, ChunkMaterial);
 		
 		_chunk->Generate();
 

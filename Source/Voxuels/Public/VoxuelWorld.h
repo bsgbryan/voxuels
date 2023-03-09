@@ -50,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, Category="Debug")
 	FIntVector RenderToBlock = FIntVector::NoneValue;
 
+	UPROPERTY(EditAnywhere, Category="Debug")
+	UMaterial* ChunkMaterial;
+
 protected:
 	UFUNCTION(CallInEditor, Category = "Debug")
 	void RenderAll();
