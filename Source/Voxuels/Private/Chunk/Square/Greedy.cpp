@@ -46,17 +46,17 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 			}
 
 			if (_back_surface_width)
-				RenderWidthSurface(
+				Geometry->Add(
 					Block::Face::Back,
-					_back_surface_width,
-					FVector(x, y + _width - _back_surface_width, z)
+					FVector(x, y + _width - _back_surface_width, z),
+					FIntVector3(0, _back_surface_width - 1, 0)
 				);
 
 			if (_front_surface_width)
-				RenderWidthSurface(
+				Geometry->Add(
 					Block::Face::Front,
-					_front_surface_width,
-					FVector(x - 1, y + _width - _front_surface_width, z)
+					FVector(x - 1, y + _width - _front_surface_width, z),
+					FIntVector3(0, _front_surface_width - 1, 0)
 				);
 		#pragma endregion 
 
@@ -122,34 +122,33 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 							);
 
 						if (_front_surface_size)
-							RenderWidthSurface(
+							Geometry->Add(
 								Block::Face::Front,
-								_front_surface_size,
-								FVector(x + _depth - 1, y + _width - _front_surface_size, z)
+								FVector(x + _depth - 1, y + _width - _front_surface_size, z),
+								FIntVector3(0, _front_surface_size - 1, 0)
 							);
 					}
 				}
 			
 				if (_left_surface_size)
-					RenderDepthSurface(
+					Geometry->Add(
 						Block::Face::Left,
-						_left_surface_size,
-						FVector(x + _depth - _left_surface_size, y, z)
+						FVector(x + _depth - _left_surface_size, y, z),
+						FIntVector3(_left_surface_size - 1, 0, 0)
 					);
 
 				if (_right_surface_size)
-					RenderDepthSurface(
+					Geometry->Add(
 						Block::Face::Right,
-						_right_surface_size,
-						FVector(x + _depth - _right_surface_size, y + _width - 1, z)
+						FVector(x + _depth - _right_surface_size, y + _width - 1, z),
+						FIntVector3(_right_surface_size - 1, 0, 0)
 					);
 
 				if (_top_surface_width || _top_surface_depth)
-					RenderHeightSurface(
+					Geometry->Add(
 						Block::Face::Up,
-						_top_surface_width,
-						_top_surface_depth,
-						FVector(x + _depth - _top_surface_depth, y + _width - _top_surface_width, z)
+						FVector(x + _depth - _top_surface_depth, y + _width - _top_surface_width, z),
+						FIntVector3(_top_surface_depth - 1, _top_surface_width - 1, 0)
 					);
 
 				if (_depth + x == Dimensions.X) {
@@ -163,10 +162,10 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 						);
 
 					if (_front_surface_size)
-						RenderWidthSurface(
+						Geometry->Add(
 							Block::Face::Front,
-							_front_surface_size,
-							FVector(x + _depth - 1, y + _width - _front_surface_size, z)
+							FVector(x + _depth - 1, y + _width - _front_surface_size, z),
+							FIntVector3(0, _front_surface_size - 1, 0)
 						);
 				}
 			#pragma endregion
@@ -195,43 +194,6 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 	}
 }
 
-void AVoxuelChunkSquareGreedy::RenderWidthSurface(
-	const Block::Face direction,
-	const uint8 size,
-	const FVector& position
-) const {
-	Geometry->Add(
-		direction,
-		position,
-		FIntVector3(0, size - 1, 0)
-	);
-}
-
-void AVoxuelChunkSquareGreedy::RenderDepthSurface(
-	const Block::Face direction,
-	const uint8 size,
-	const FVector& position
-) const {
-	Geometry->Add(
-		direction,
-		position,
-		FIntVector3(size - 1, 0, 0)
-	);
-}
-
-void AVoxuelChunkSquareGreedy::RenderHeightSurface(
-	const Block::Face direction,
-	const uint8 width,
-	const uint8 depth,
-	const FVector& position
-) const {
-	Geometry->Add(
-		direction,
-		position,
-		FIntVector3(depth - 1, width - 1, 0)
-	);
-}
-
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 	const Block::Face direction,
 	const FVector& position,
@@ -246,8 +208,8 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 	if (current_surface_size) {
 		const float		_y = position.Y - current_surface_size;
 		const FVector _p = FVector(position.X, _y, position.Z);
-		
-		RenderWidthSurface(direction, current_surface_size, _p);
+
+		Geometry->Add(direction, _p, FIntVector3(0, current_surface_size - 1, 0));
 
 		return -current_surface_size;
 	}
@@ -269,8 +231,8 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 	if (current_surface_size) {
 		const float		_x = position.X - current_surface_size;
 		const FVector _p = FVector(_x, position.Y, position.Z);
-		
-		RenderDepthSurface(direction, current_surface_size, _p);
+
+		Geometry->Add(direction, _p, FIntVector3(current_surface_size - 1, 0, 0));
 
 		return -current_surface_size;
 	}
@@ -307,8 +269,8 @@ int8 AVoxuelChunkSquareGreedy::ProcessRowForHeightSurface(
 		const float		_y = position.Y - (width - 1);
 		const float   _x = position.X -  depth;
 		const FVector _p = FVector(_x, _y, position.Z);
-		
-		RenderHeightSurface(direction, width, depth, _p);
+
+		Geometry->Add(direction, _p, FIntVector3(depth - 1, width - 1, 0));
 
 		return -depth;
 	}

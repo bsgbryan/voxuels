@@ -19,25 +19,6 @@ public:
 	virtual void GenerateMesh() override;
 
 private:
-	void RenderWidthSurface(
-		const Block::Face direction,
-		const uint8 size,
-		const FVector& position
-	) const;
-
-	void RenderDepthSurface(
-		const Block::Face direction,
-		const uint8 size,
-		const FVector& position
-	) const;
-
-	void RenderHeightSurface(
-		const Block::Face direction,
-		const uint8 width,
-		const uint8 depth,
-		const FVector& position
-	) const;
-	
 	int8 ProcessBlockForWidthSurface(
 		const Block::Face direction,
 		const FVector& position,
