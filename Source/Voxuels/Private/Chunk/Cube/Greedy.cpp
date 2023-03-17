@@ -2,14 +2,14 @@
 
 #include "Block.h"
 #include "VoxuelsLogger.h"
-#include "Chunk/Square/VoxuelChunkSquareGreedy.h"
+#include "Chunk/Cube/VoxuelChunkCubeGreedy.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 
-void AVoxuelChunkSquareGreedy::GenerateMesh() {
+void AVoxuelChunkSquareGreedy::GenerateMesh(UVoxuelDecoratorBevelBase* bevel) {
 	TArray<bool> _processed;
 	_processed.SetNum(Dimensions.Y * Dimensions.X * Dimensions.Z);
 	
-	for (int16 i = 0, x = 0, y = 0, z = Dimensions.Z - 1; i < Dimensions.Y * Dimensions.X;) {
+	for (int16 i = 0, x = 0, y = 0, z = Max; i < Dimensions.Y * Dimensions.X;) {
 		#pragma region Process Y (width) Axis
 			uint8 _width							 = 0;
 			uint8 _top_surface_width	 = 0;
@@ -28,13 +28,15 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 				_back_surface_width += ProcessBlockForWidthSurface(
 					Block::Face::Back,
 					FVector(x, y + _width, z),
-					_back_surface_width
+					_back_surface_width,
+					bevel
 				);
 
 				_front_surface_width += ProcessBlockForWidthSurface(
 					Block::Face::Front,
 					FVector(x - 1, y + _width, z),
-					_front_surface_width
+					_front_surface_width,
+					bevel
 				);
 
 				_processed[_y + (Dimensions.Y * x) + (z * (Dimensions.Y * Dimensions.X))] = true;
@@ -49,6 +51,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 				Geometry->Add(
 					Block::Face::Back,
 					FVector(x, y + _width - _back_surface_width, z),
+					bevel,
+					Dimensions,
 					FIntVector3(0, _back_surface_width - 1, 0)
 				);
 
@@ -56,6 +60,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 				Geometry->Add(
 					Block::Face::Front,
 					FVector(x - 1, y + _width - _front_surface_width, z),
+					bevel,
+					Dimensions,
 					FIntVector3(0, _front_surface_width - 1, 0)
 				);
 		#pragma endregion 
@@ -72,7 +78,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 				const uint16 _result = ProcessDepthSurfaces(
 					FVector(x, y, z),
 					_width - 1,
-					(_left_surface_size << 8) | _right_surface_size
+					(_left_surface_size << 8) | _right_surface_size,
+					bevel
 				);
 
 				_left_surface_size  += static_cast<int8>(_result >> 8);
@@ -96,7 +103,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 						const uint16 __result = ProcessDepthSurfaces(
 							FVector(x + _depth, y, z),
 							_width - 1,
-							(_left_surface_size << 8) | _right_surface_size
+							(_left_surface_size << 8) | _right_surface_size,
+							bevel
 						);
 
 						_left_surface_size  += static_cast<int8>(__result >> 8);
@@ -106,7 +114,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 							Block::Face::Up,
 							FVector(x + _depth, y, z),
 							_top_surface_width,
-							_top_surface_depth
+							_top_surface_depth,
+							bevel
 						);
 					
 						++_depth;
@@ -118,13 +127,16 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 							_front_surface_size += ProcessBlockForWidthSurface(
 								Block::Face::Front,
 								FVector(x + _depth - 1, y + f, z),
-								_front_surface_size
+								_front_surface_size,
+								bevel
 							);
 
 						if (_front_surface_size)
 							Geometry->Add(
 								Block::Face::Front,
 								FVector(x + _depth - 1, y + _width - _front_surface_size, z),
+								bevel,
+								Dimensions,
 								FIntVector3(0, _front_surface_size - 1, 0)
 							);
 					}
@@ -134,6 +146,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 					Geometry->Add(
 						Block::Face::Left,
 						FVector(x + _depth - _left_surface_size, y, z),
+						bevel,
+						Dimensions,
 						FIntVector3(_left_surface_size - 1, 0, 0)
 					);
 
@@ -141,13 +155,17 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 					Geometry->Add(
 						Block::Face::Right,
 						FVector(x + _depth - _right_surface_size, y + _width - 1, z),
+						bevel,
+						Dimensions,
 						FIntVector3(_right_surface_size - 1, 0, 0)
 					);
 
-				if (_top_surface_width || _top_surface_depth)
+				if (_top_surface_width && _top_surface_depth)
 					Geometry->Add(
 						Block::Face::Up,
 						FVector(x + _depth - _top_surface_depth, y + _width - _top_surface_width, z),
+						bevel,
+						Dimensions,
 						FIntVector3(_top_surface_depth - 1, _top_surface_width - 1, 0)
 					);
 
@@ -158,13 +176,16 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 						_front_surface_size += ProcessBlockForWidthSurface(
 							Block::Face::Front,
 							FVector(x + _depth - 1, y + f, z),
-							_front_surface_size
+							_front_surface_size,
+							bevel
 						);
 
 					if (_front_surface_size)
 						Geometry->Add(
 							Block::Face::Front,
 							FVector(x + _depth - 1, y + _width - _front_surface_size, z),
+							bevel,
+							Dimensions,
 							FIntVector3(0, _front_surface_size - 1, 0)
 						);
 				}
@@ -187,7 +208,7 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 			if (i > 0 && x == 0 && y == 0) {
 				--z;
 
-				if (z > -1)
+				if (z >= Min)
 					i = 0;
 			}
 		#pragma endregion 
@@ -197,7 +218,8 @@ void AVoxuelChunkSquareGreedy::GenerateMesh() {
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 	const Block::Face direction,
 	const FVector& position,
-	const uint8 current_surface_size
+	const uint8 current_surface_size,
+	const UVoxuelDecoratorBevelBase* bevel
 ) {
 	if (
 		const uint8	_value = Surface[GetBlockMeshIndex(position)];
@@ -209,7 +231,13 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 		const float		_y = position.Y - current_surface_size;
 		const FVector _p = FVector(position.X, _y, position.Z);
 
-		Geometry->Add(direction, _p, FIntVector3(0, current_surface_size - 1, 0));
+		Geometry->Add(
+			direction,
+			_p,
+			bevel,
+			Dimensions,
+			FIntVector3(0, current_surface_size - 1, 0)
+		);
 
 		return -current_surface_size;
 	}
@@ -220,7 +248,8 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForWidthSurface(
 int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 	const Block::Face direction,
 	const FVector& position,
-	const uint8 current_surface_size
+	const uint8 current_surface_size,
+	const UVoxuelDecoratorBevelBase* bevel
 ) {
 	if (
 		const uint8 _value = Surface[GetBlockMeshIndex(position)];
@@ -232,7 +261,13 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 		const float		_x = position.X - current_surface_size;
 		const FVector _p = FVector(_x, position.Y, position.Z);
 
-		Geometry->Add(direction, _p, FIntVector3(current_surface_size - 1, 0, 0));
+		Geometry->Add(
+			direction,
+			_p,
+			bevel,
+			Dimensions,
+			FIntVector3(current_surface_size - 1, 0, 0)
+		);
 
 		return -current_surface_size;
 	}
@@ -243,16 +278,19 @@ int8 AVoxuelChunkSquareGreedy::ProcessBlockForDepthSurface(
 uint16 AVoxuelChunkSquareGreedy::ProcessDepthSurfaces(
 	const FVector& position,
 	const uint8 width,
-	const uint16 depth
+	const uint16 depth,
+	const UVoxuelDecoratorBevelBase* bevel
 ) {	
 	return (ProcessBlockForDepthSurface(
 		Block::Face::Left,
 		position,
-		static_cast<uint8>(depth >> 8)
+		static_cast<uint8>(depth >> 8),
+		bevel
 		) << 8) | (ProcessBlockForDepthSurface(
 			Block::Face::Right,
 			FVector(position.X, position.Y + width, position.Z),
-			static_cast<uint8>(depth)
+			static_cast<uint8>(depth),
+			bevel
 		) & 0xff);
 }
 
@@ -260,7 +298,8 @@ int8 AVoxuelChunkSquareGreedy::ProcessRowForHeightSurface(
 	const Block::Face direction,
 	const FVector& position,
 	const uint8 width,
-	const uint8 depth
+	const uint8 depth,
+	const UVoxuelDecoratorBevelBase* bevel
 ) {
 	if (Surface[GetBlockMeshIndex(position)] & Block::Surface::Up)
 		return 1;
@@ -270,7 +309,13 @@ int8 AVoxuelChunkSquareGreedy::ProcessRowForHeightSurface(
 		const float   _x = position.X -  depth;
 		const FVector _p = FVector(_x, _y, position.Z);
 
-		Geometry->Add(direction, _p, FIntVector3(depth - 1, width - 1, 0));
+		Geometry->Add(
+			direction,
+			_p,
+			bevel,
+			Dimensions,
+			FIntVector3(depth - 1, width - 1, 0)
+		);
 
 		return -depth;
 	}

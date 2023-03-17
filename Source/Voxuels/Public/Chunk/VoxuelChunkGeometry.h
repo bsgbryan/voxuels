@@ -10,6 +10,24 @@ namespace Block {
 	enum class Face;
 }
 
+class UVoxuelDecoratorBevelBase;
+
+USTRUCT(BlueprintType)
+struct FBevelConfig {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bevel")
+	bool Apply = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bevel")
+	TArray<FVector> GenerateOffsets = {
+		FVector::ZeroVector,
+		FVector::ZeroVector,
+		FVector::ZeroVector,
+		FVector::ZeroVector
+	};
+};
+
 UCLASS()
 class VOXUELS_API UVoxuelChunkGeometry final : public UObject {
 	GENERATED_BODY()
@@ -31,6 +49,8 @@ public:
 	void Add(
 		Block::Face face,
 		const FVector& position,
+		const UVoxuelDecoratorBevelBase* bevel,
+		const FIntVector3& extent,
 		const FIntVector3& dimensions = FIntVector3(0, 0, 0)
 	);
 

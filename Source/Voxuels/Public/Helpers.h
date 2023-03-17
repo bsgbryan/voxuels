@@ -12,3 +12,12 @@ struct FRenderExtent {
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Rendering")
   FIntVector To = FIntVector::NoneValue;
 };
+
+UCLASS()
+class VOXUELS_API UDebugConfig final : public UObject {
+  GENERATED_BODY()
+  
+public:
+  static inline bool RenderSurfaceBoxes = false;
+  static inline bool RenderSidePoints   = false;
+};

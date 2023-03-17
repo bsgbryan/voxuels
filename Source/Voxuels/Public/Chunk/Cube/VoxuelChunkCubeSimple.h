@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Chunk/VoxuelChunkBase.h"
-#include "VoxuelChunkSquareSimple.generated.h"
+#include "VoxuelChunkCubeSimple.generated.h"
 
 UCLASS()
 class VOXUELS_API AVoxuelChunkSquareSimple final : public AVoxuelChunkBase {
 	GENERATED_BODY()
 	
 public:
-	virtual void GenerateMesh() override;
+	virtual void GenerateMesh(UVoxuelDecoratorBevelBase* bevel) override;
 };

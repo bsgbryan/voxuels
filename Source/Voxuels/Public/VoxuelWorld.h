@@ -7,6 +7,8 @@
 #include "GameFramework/Actor.h"
 #include "VoxuelWorld.generated.h"
 
+class UVoxuelDecoratorBevelBase;
+
 UCLASS()
 class VOXUELS_API AVoxuelWorld final : public AActor {
 	GENERATED_BODY()
@@ -26,41 +28,52 @@ public:
 	UPROPERTY(EditAnywhere, Category="World")
 	FIntVector ChunkDimensions = FIntVector(32, 32, 32);
 
+	UPROPERTY(EditAnywhere, Category="World")
+	bool Threaded = true;
+	
+	UPROPERTY(EditAnywhere, Category="World")
+	bool IterativeRendering = false;
+
+	UPROPERTY(EditAnywhere, Category="World")
+	FIntVector RenderFromChunk = FIntVector::ZeroValue;
+
+	UPROPERTY(EditAnywhere, Category="World")
+	FIntVector RenderToChunk = FIntVector::ZeroValue;
+	
+	UPROPERTY(EditAnywhere, Category="World")
+	FIntVector RenderFromBlock = FIntVector::NoneValue;
+
+	UPROPERTY(EditAnywhere, Category="World")
+	FIntVector RenderToBlock = FIntVector::NoneValue;
+
+	UPROPERTY(EditAnywhere, Category="World")
+	UMaterial* ChunkMaterial;
+
 	UPROPERTY(EditAnywhere, Category="Noise")
 	float Frequency = 0.03f;
 
 	UPROPERTY(EditAnywhere, Category="Noise")
 	int Seed = 1138;
 
-	UPROPERTY(EditAnywhere, Category="Debug")
-	bool Threaded = true;
+	UPROPERTY(EditAnywhere, Category="Geometry")
+	TSubclassOf<UVoxuelDecoratorBevelBase> Bevel;
+
+	#if WITH_EDITORONLY_DATA
+		UPROPERTY(EditAnywhere, Category="Debug")
+		bool RenderSurfaceBoxes = false;
+
+		UPROPERTY(EditAnywhere, Category="Debug")
+		bool RenderSidePoints = false;
+	#endif
 	
-	UPROPERTY(EditAnywhere, Category="Debug")
-	bool IterativeRendering = false;
-
-	UPROPERTY(EditAnywhere, Category="Debug")
-	FIntVector RenderFromChunk = FIntVector::ZeroValue;
-
-	UPROPERTY(EditAnywhere, Category="Debug")
-	FIntVector RenderToChunk = FIntVector::ZeroValue;
-	
-	UPROPERTY(EditAnywhere, Category="Debug")
-	FIntVector RenderFromBlock = FIntVector::NoneValue;
-
-	UPROPERTY(EditAnywhere, Category="Debug")
-	FIntVector RenderToBlock = FIntVector::NoneValue;
-
-	UPROPERTY(EditAnywhere, Category="Debug")
-	UMaterial* ChunkMaterial;
-
 protected:
-	UFUNCTION(CallInEditor, Category = "Debug")
+	UFUNCTION(CallInEditor, Category = "World")
 	void RenderAll();
 
-	UFUNCTION(CallInEditor, Category = "Debug")
+	UFUNCTION(CallInEditor, Category = "World")
 	void RenderChunk();
 
-	UFUNCTION(CallInEditor, Category = "Debug")
+	UFUNCTION(CallInEditor, Category = "World")
 	void Clear();
 
 private:

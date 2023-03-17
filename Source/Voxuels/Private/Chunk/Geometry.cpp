@@ -5,89 +5,142 @@
 #include "Block.h"
 #include "MatrixTypes.h"
 #include "VoxuelsLogger.h"
+#include "Decorator/Bevel/VoxuelDecoratorBevelBase.h"
 
 UVoxuelChunkGeometry::UVoxuelChunkGeometry() {}
 
 void UVoxuelChunkGeometry::Add(
 	const Block::Face face,
 	const FVector& position,
+	const UVoxuelDecoratorBevelBase* bevel,
+	const FIntVector3& extent,
 	const FIntVector3& dimensions
-) {	
-	Vertices.Append(GenerateQuad(face, position, dimensions));
-
-	const FVector _v1 = Vertices[VertexCount];
-	const FVector _v2 = Vertices[VertexCount + 2];
-	const FVector _v3 = Vertices[VertexCount + 3];
+) {
+	const TArray<FVector> _vertices = GenerateQuad(face, position, dimensions);
 	
-	const FVector _normal			= UKismetMathLibrary::Cross_VectorVector(_v1 - _v3, _v2 - _v3);
-	const FVector _normalized = UKismetMathLibrary::Normal(_normal, 0.1f);
+	Vertices.Append(_vertices);
 
-	const float _r = FMath::Clamp((abs(_normalized.Y) * 0.5f) + (abs(_normalized.X) * 0.5f), 0.0f, 0.5f) * 2.0f;
-	const float _g = FMath::Clamp((abs(_normalized.X) * 0.5f) + (abs(_normalized.Z) * 0.5f), 0.0f, 0.5f) * 2.0f;
-	const float _b = FMath::Clamp((abs(_normalized.Z) * 0.5f) + (abs(_normalized.Y) * 0.5f), 0.0f, 0.5f) * 2.0f;
+	// if (bevel->Apply(position)) {
+	// 	const TArray<FVector> _bevel_vertices = bevel->GenerateOffsets(_vertices);
+	//
+	// 	Apply(face, _vertices, _bevel_vertices);
+	// }
+	// else {
+		const FVector _v1 = Vertices[VertexCount];
+		const FVector _v2 = Vertices[VertexCount + 2];
+		const FVector _v3 = Vertices[VertexCount + 3];
+		
+		const FVector _normal			= UKismetMathLibrary::Cross_VectorVector(_v1 - _v3, _v2 - _v3);
+		const FVector _normalized = UKismetMathLibrary::Normal(_normal, 0.1f);
 
-	const float _intensity = (position.Z / Dimensions.Z) * 255;
-	
-	const FColor _color = FColor(
-		_r * _intensity,
-		_g * _intensity,
-		_b * _intensity,
-		1
-	);
-	
-	Normals.Append({
-		_normalized,
-		_normalized,
-		_normalized,
-		_normalized
-	});
-	
-	Triangles.Append({
-		VertexCount + 3,
-		VertexCount + 2,
-		VertexCount,
-		VertexCount + 2,
-		VertexCount + 1,
-		VertexCount
-	});
+		const float _r = FMath::Clamp((abs(_normalized.Y) * 0.5f) + (abs(_normalized.X) * 0.5f), 0.0f, 0.5f) * 2.0f;
+		const float _g = FMath::Clamp((abs(_normalized.X) * 0.5f) + (abs(_normalized.Z) * 0.5f), 0.0f, 0.5f) * 2.0f;
+		const float _b = FMath::Clamp((abs(_normalized.Z) * 0.5f) + (abs(_normalized.Y) * 0.5f), 0.0f, 0.5f) * 2.0f;
 
-	Colors.Append({
-		_color,
-		_color,
-		_color,
-		_color
-	});
+		const float _intensity = (position.Z / Dimensions.Z) * 255;
+		
+		const FColor _color = FColor(
+			_r * _intensity,
+			_g * _intensity,
+			_b * _intensity,
+			1
+		);
+		
+		Normals.Append({
+			_normalized,
+			_normalized,
+			_normalized,
+			_normalized
+		});
+		
+		Triangles.Append({
+			VertexCount + 3,
+			VertexCount + 2,
+			VertexCount,
+			VertexCount + 2,
+			VertexCount + 1,
+			VertexCount
+		});
 
-	float _depth  = 1;
-	float _width  = 1;
-	float _offset_depth = 0;
-	float _offset_width = 0;
+		Colors.Append({
+			_color,
+			_color,
+			_color,
+			_color
+		});
 
-	if (face == Block::Face::Up) {
-		_depth = dimensions.X + 1;
-		_width = dimensions.Y + 1;
-		_offset_depth = static_cast<int>(position.X) % 2;
-		_offset_width = static_cast<int>(position.Y) % 2;
-	} else if (face == Block::Face::Front || face == Block::Face::Back) {
-		_depth = 1;
-		_width = dimensions.Y + 1;
-		_offset_depth = static_cast<int>(position.Z) % 2;
-		_offset_width = static_cast<int>(position.Y) % 2;
-	}  else if (face == Block::Face::Left || face == Block::Face::Right) {
-		_depth = 1;
-		_width = dimensions.X + 1;
-		_offset_depth = static_cast<int>(position.Z) % 2;
-		_offset_width = static_cast<int>(position.X) % 2;
-	}
-	
-	UVs.Append({
-		FVector2D(_offset_depth, _offset_width + _width),
-		FVector2D(_offset_depth, _offset_width),
-		FVector2D(_offset_depth + _depth, _offset_width),
-		FVector2D(_offset_depth + _depth, _offset_width + _width)
-	});
+		const FVector _scaled = position * 1.0f;
 
-	VertexCount += 4;
+		TArray<FVector2D> uvs;
+		uvs.SetNum(4);
+		
+		if (face == Block::Face::Up) {
+			const float X = static_cast<float>(extent.X);
+			const float Y = static_cast<float>(extent.Y);
+
+			const float _depth = (dimensions.X + 1) / X;
+			const float _width = (dimensions.Y + 1) / Y;
+
+			const float _offset_depth = _scaled.X / X;
+			const float _offset_width = _scaled.Y / Y;
+
+			UVs.Append({
+				FVector2D(_offset_depth * X, (_offset_width + _width) * Y),
+				FVector2D(_offset_depth * X, _offset_width * Y),
+				FVector2D((_offset_depth + _depth) * X, _offset_width * Y),
+				FVector2D((_offset_depth + _depth) * X, (_offset_width + _width) * Y),
+				// For reference: These are the unit-coordinate equivalents of the above
+				// FVector2D(0, 1),
+				// FVector2D(0, 0),
+				// FVector2D(1, 0),
+				// FVector2D(1, 1),
+			});
+		} else if (face == Block::Face::Front || face == Block::Face::Back) {
+			const float Z = static_cast<float>(extent.Z);
+			const float Y = static_cast<float>(extent.Y);
+			
+			const float _depth = 1 / Z;
+			const float _width = (dimensions.Y + 1) / Y;
+
+			const float _offset_depth = _scaled.Z / Z;
+			const float _offset_width = _scaled.Y / Y;
+
+			UVs.Append({
+				FVector2D((_offset_depth + _depth) * Z, _offset_width * Y),
+				FVector2D((_offset_depth + _depth) * Z, (_offset_width + _width) * Y),
+				FVector2D(_offset_depth * Z, (_offset_width + _width) * Y),
+				FVector2D(_offset_depth * Z, _offset_width * Y),
+				// For reference: These are the unit-coordinate equivalents of the above
+				// FVector2D(1, 0),
+				// FVector2D(1, 1),
+				// FVector2D(0, 1),
+				// FVector2D(0, 0),
+			});
+		} else if (face == Block::Face::Left || face == Block::Face::Right) {
+			const float Z = static_cast<float>(extent.Z);
+			const float X = static_cast<float>(extent.X);
+			
+			const float _depth = 1 / Z;
+			const float _width = (dimensions.X + 1) / X;
+
+			const float _offset_depth = _scaled.X / X;
+			const float _offset_width = _scaled.Z / Z;
+			
+			UVs.Append({
+				FVector2D(_offset_depth * Z, (_offset_width + _width) * X),
+				FVector2D(_offset_depth * Z, _offset_width * X),
+				FVector2D((_offset_depth + _depth) * Z, _offset_width * X),
+				FVector2D((_offset_depth + _depth) * Z, (_offset_width + _width) * X),
+				// For reference: These are the unit-coordinate equivalents of the above
+				// FVector2D(0, 1),
+				// FVector2D(0, 0),
+				// FVector2D(1, 0),
+				// FVector2D(1, 1),
+			});
+		}
+
+		VertexCount += 4;
+	// }
 }
 
 TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
@@ -101,10 +154,10 @@ TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
 
 	switch (face) {
 		case Block::Face::Front: {
-			_vertices[0] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(dimensions.X, dimensions.Y, 0)) * 100);
-			_vertices[1] = Block::Vertices[Block::Triangles[f][1]] + ((position + FVector(dimensions.X, 0, 0)) * 100);
-			_vertices[2] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, 0, dimensions.Z)) * 100);
-			_vertices[3] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, dimensions.Y, dimensions.Z)) * 100);
+			_vertices[2] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(dimensions.X, dimensions.Y, 0)) * 100);
+			_vertices[3] = Block::Vertices[Block::Triangles[f][1]] + ((position + FVector(dimensions.X, 0, 0)) * 100);
+			_vertices[0] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, 0, dimensions.Z)) * 100);
+			_vertices[1] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, dimensions.Y, dimensions.Z)) * 100);
 
 			break;		
 		}
@@ -117,23 +170,22 @@ TArray<FVector> UVoxuelChunkGeometry::GenerateQuad(
 			break;		
 		}
 		case Block::Face::Left: {
-			_vertices[0] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(dimensions.X, 0, 0)) * 100);
-			_vertices[1] = Block::Vertices[Block::Triangles[f][1]] + ((position) * 100);
-			_vertices[2] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(0, 0, dimensions.Z)) * 100);
-			_vertices[3] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, 0, dimensions.Z)) * 100);
+			_vertices[2] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(dimensions.X, 0, 0)) * 100);
+			_vertices[3] = Block::Vertices[Block::Triangles[f][1]] + ((position) * 100);
+			_vertices[0] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(0, 0, dimensions.Z)) * 100);
+			_vertices[1] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(dimensions.X, 0, dimensions.Z)) * 100);
 				
 			break;
 		}
 		case Block::Face::Right: {
-			_vertices[0] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(0, dimensions.Y, 0)) * 100);
-			_vertices[1] = Block::Vertices[Block::Triangles[f][1]] + ((position + FVector(dimensions.X, dimensions.Y, 0)) * 100);
-			_vertices[2] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, dimensions.Y, dimensions.Z)) * 100);
-			_vertices[3] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(0, dimensions.Y, dimensions.Z)) * 100);
+			_vertices[2] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(0, dimensions.Y, 0)) * 100);
+			_vertices[3] = Block::Vertices[Block::Triangles[f][1]] + ((position + FVector(dimensions.X, dimensions.Y, 0)) * 100);
+			_vertices[0] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, dimensions.Y, dimensions.Z)) * 100);
+			_vertices[1] = Block::Vertices[Block::Triangles[f][3]] + ((position + FVector(0, dimensions.Y, dimensions.Z)) * 100);
 				
 			break;
 		}
-		case Block::Face::Up:
-		case Block::Face::Down: {
+		case Block::Face::Up: {
 			_vertices[0] = Block::Vertices[Block::Triangles[f][0]] + ((position + FVector(0, dimensions.Y, 0)) * 100);
 			_vertices[1] = Block::Vertices[Block::Triangles[f][1]] + ((position) * 100);
 			_vertices[2] = Block::Vertices[Block::Triangles[f][2]] + ((position + FVector(dimensions.X, 0, 0)) * 100);

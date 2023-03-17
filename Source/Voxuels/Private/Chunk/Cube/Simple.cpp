@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Chunk/Square/VoxuelChunkSquareSimple.h"
+#include "Chunk/Cube/VoxuelChunkCubeSimple.h"
 #include "Block.h"
 #include "Chunk/VoxuelChunkGeometry.h"
 
-void AVoxuelChunkSquareSimple::GenerateMesh() {
+void AVoxuelChunkSquareSimple::GenerateMesh(UVoxuelDecoratorBevelBase* bevel) {
 	for (int i = 0, x = -1, z = -1; i < Dimensions.X * Dimensions.Y * Dimensions.Z; i++) {
 		const int y = i % Dimensions.Y;
 
@@ -19,21 +19,21 @@ void AVoxuelChunkSquareSimple::GenerateMesh() {
 		const uint8   _current  = Surface[GetBlockMeshIndex(_position)];
 
 		if ((_current & Block::Surface::Front) == Block::Surface::Front)
-			Geometry->Add(Block::Face::Front, _position);
+			Geometry->Add(Block::Face::Front, _position, bevel, Dimensions);
 		
 		if ((_current & Block::Surface::Back) == Block::Surface::Back)
-			Geometry->Add(Block::Face::Back, _position);
+			Geometry->Add(Block::Face::Back, _position, bevel, Dimensions);
 		
 		if ((_current & Block::Surface::Left) == Block::Surface::Left)
-			Geometry->Add(Block::Face::Left, _position);
+			Geometry->Add(Block::Face::Left, _position, bevel, Dimensions);
 		
 		if ((_current & Block::Surface::Right) == Block::Surface::Right)
-			Geometry->Add(Block::Face::Right, _position);
+			Geometry->Add(Block::Face::Right, _position, bevel, Dimensions);
 
 		if ((_current & Block::Surface::Up) == Block::Surface::Up)
-			Geometry->Add(Block::Face::Up, _position);
+			Geometry->Add(Block::Face::Up, _position, bevel, Dimensions);
 
 		if ((_current & Block::Surface::Down) == Block::Surface::Down)
-			Geometry->Add(Block::Face::Down, _position);
+			Geometry->Add(Block::Face::Down, _position, bevel, Dimensions);
 	}
 }

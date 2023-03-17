@@ -4,6 +4,7 @@
 #include "ProceduralMeshComponent.h"
 #include "VoxuelsLogger.h"
 #include "VoxuelWorld.h"
+#include "Decorator/Bevel/VoxuelDecoratorBevelBase.h"
 #include "Chunk/VoxuelChunkBase.h"
 
 AVoxuelWorld::AVoxuelWorld() {
@@ -51,6 +52,11 @@ void AVoxuelWorld::InitializeRenderEnvironment() {
 
 	Current = FIntVector::ZeroValue;
 
+	#if UE_EDITOR
+		UDebugConfig::RenderSurfaceBoxes = RenderSurfaceBoxes;
+		UDebugConfig::RenderSidePoints	 = RenderSidePoints;
+	#endif
+	
 	RenderEnvironmentInitialized = true;
 }
 
@@ -82,7 +88,7 @@ bool AVoxuelWorld::DoRenderChunk(const int y, const int x) {
 
 		_chunk->Mesh->SetMaterial(0, ChunkMaterial);
 		
-		_chunk->Generate();
+		_chunk->Generate(Bevel->GetDefaultObject<UVoxuelDecoratorBevelBase>());
 
 		Chunks[y + (DrawDistance.Y * x)] = _chunk;
 

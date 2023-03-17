@@ -10,6 +10,7 @@
 class UVoxuelChunkGeometry;
 class UFastNoiseWrapper;
 class UProceduralMeshComponent;
+class UVoxuelDecoratorBevelBase;
 
 UCLASS()
 class VOXUELS_API AVoxuelChunkBase : public AActor {
@@ -32,13 +33,16 @@ public:
 
 	TObjectPtr<UProceduralMeshComponent> Mesh;
 
-	void Generate();
+	void Generate(UVoxuelDecoratorBevelBase* bevel);
 
 protected:
 	TObjectPtr<UVoxuelChunkGeometry> Geometry;
 	TArray<uint8> Surface;
 
-	virtual void GenerateMesh();
+	uint8 Min = UINT8_MAX;
+	uint8 Max = 0;
+
+	virtual void GenerateMesh(UVoxuelDecoratorBevelBase* bevel);
 
 	void GenerateSurface();
 

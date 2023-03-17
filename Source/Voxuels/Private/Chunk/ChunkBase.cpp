@@ -5,6 +5,7 @@
 #include "Chunk/VoxuelChunkGeometry.h"
 #include "ProceduralMeshComponent.h"
 #include "FastNoiseWrapper.h"
+#include "Decorator/Bevel/VoxuelDecoratorBevelBase.h"
 
 AVoxuelChunkBase::AVoxuelChunkBase() {
 	Geometry = NewObject<UVoxuelChunkGeometry>();
@@ -16,11 +17,16 @@ AVoxuelChunkBase::AVoxuelChunkBase() {
 	SetRootComponent(Mesh);
 }
 
-void AVoxuelChunkBase::Generate() {
+void AVoxuelChunkBase::Generate(UVoxuelDecoratorBevelBase* bevel) {
+	bevel->Configure();
+	
 	if (Threaded)
-		AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [chunk = this] {
+		AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [
+			chunk = this,
+			bevel
+		] {
 			chunk->GenerateSurface();
-			chunk->GenerateMesh();
+			chunk->GenerateMesh(bevel);
 
 			AsyncTask(ENamedThreads::GameThread, [render = chunk] {
 				render->Mesh->CreateMeshSection(
@@ -37,7 +43,7 @@ void AVoxuelChunkBase::Generate() {
 		});
 	else {
 		GenerateSurface();
-		GenerateMesh();
+		GenerateMesh(bevel);
 
 		Mesh->CreateMeshSection(
 			0,
@@ -72,29 +78,37 @@ void AVoxuelChunkBase::GenerateSurface() {
 			const float _scaled = (Noise->GetNoise2D(_x_pos, _y_pos) + 1) * (Dimensions.Z / 2);
 			const uint8 _value  = FMath::Clamp(FMath::RoundToInt(_scaled), 0, Dimensions.Z - 1);
 
+			if (_value > Max)
+				Max = _value;
+
+			if (_value < Min)
+				Min = _value;
+
 			const int _current = GetBlockIndex(FVector(x, y, _value));
 			
 			Surface[_current] |= Block::Surface::Exists | Block::Surface::Up;
 
-			// #if UE_EDITOR
-			// 	const uint8 _shade = (static_cast<float>(_value) / Dimensions.Z - 1) * 255;
-			//
-			// 	DrawDebugBox(
-			// 		GetWorld(),
-			// 		(FVector(x, y, _value) * 100 + _location) + FVector(-50, -50, 50),
-			// 		FVector::OneVector * 50,
-			// 		FColor(_shade, 0, _shade, 255),
-			// 		true
-			// 	);
-			// #endif
+			#if UE_EDITOR
+				if (UDebugConfig::RenderSurfaceBoxes) {
+					const uint8 _shade = (static_cast<float>(_value) / Dimensions.Z - 1) * 255;
+				
+					DrawDebugBox(
+						GetWorld(),
+						(FVector(x, y, _value) * 100 + _location) + FVector(-50, -50, 50),
+						FVector::OneVector * 50,
+						FColor(_shade, 0, _shade, 255),
+						true
+					);
+				}
+			#endif
 
 			bool _left_filled_in	 = false;
 			bool _bottom_filled_in = false;
 			int  _offset		= 1;
 
 			while (y > 0 && x > 0 && (!_left_filled_in || !_bottom_filled_in)) {
-				_left_filled_in   = (Surface[GetBlockIndex(FVector(x,		  y - 1, _value))] & Block::Surface::Up) == Block::Surface::Up;
-				_bottom_filled_in = (Surface[GetBlockIndex(FVector(x - 1, y,	   _value))] & Block::Surface::Up) == Block::Surface::Up;
+				_left_filled_in   = (Surface[GetBlockIndex(FVector(x,		 y - 1, _value))] & Block::Surface::Up) == Block::Surface::Up;
+				_bottom_filled_in = (Surface[GetBlockIndex(FVector(x - 1, y,	    _value))] & Block::Surface::Up) == Block::Surface::Up;
 
 				if (_left_filled_in && _bottom_filled_in)
 					continue;
@@ -127,7 +141,7 @@ void AVoxuelChunkBase::GenerateSurface() {
 	}
 }
 
-void AVoxuelChunkBase::GenerateMesh() {
+void AVoxuelChunkBase::GenerateMesh(UVoxuelDecoratorBevelBase* bevel) {
 	// Implemented in children
 }
 
@@ -165,20 +179,22 @@ bool AVoxuelChunkBase::ProcessNeighbor(
 			
 			Surface[GetBlockIndex(_p)] |= (Block::Surface::Exists | (width ? Block::Surface::Right : Block::Surface::Front));
 
-			// #if UE_EDITOR
-			// 	const FVector _location = GetActorLocation();
-			// 	const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
-			// 	
-			// 	DrawDebugPoint(
-			// 		GetWorld(),
-			// 		(FVector(position.X, position.Y, h) * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
-			// 		10,
-			// 		FColor(0, width ? 0 : _shade, width ? _shade : 0, 255),
-			// 		true,
-			// 		-1,
-			// 		-2
-			// 	);
-			// #endif
+			#if UE_EDITOR
+				if (UDebugConfig::RenderSidePoints) {
+					const FVector _location = GetActorLocation();
+					const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
+					
+					DrawDebugPoint(
+						GetWorld(),
+						(FVector(position.X, position.Y, h) * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
+						10,
+						FColor(_shade, width ? 0 : _shade, width ? _shade : 0, 255),
+						true,
+						-1,
+						-2
+					);
+				}
+			#endif
 		}
 
 		_filled_in = true;
@@ -190,20 +206,22 @@ bool AVoxuelChunkBase::ProcessNeighbor(
 
 			Surface[GetBlockIndex(_p)] |= (Block::Surface::Exists | (width ? Block::Surface::Left : Block::Surface::Back));
 	
-			// #if UE_EDITOR
-			// 	const FVector _location = GetActorLocation();
-			// 	const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
-			//
-			// 	DrawDebugPoint(
-			// 		GetWorld(),
-			// 		(_p * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
-			// 		10,
-			// 		FColor(width ? _shade : 0, width ? 0 : _shade, _shade, 255),
-			// 		true,
-			// 		-1,
-			// 		-2
-			// 	);
-			// #endif
+			#if UE_EDITOR
+				if (UDebugConfig::RenderSidePoints) {
+					const FVector _location = GetActorLocation();
+					const uint8		_shade		= (static_cast<float>(h) / Dimensions.Z - 1) * 255;
+				
+					DrawDebugPoint(
+						GetWorld(),
+						(_p * 100 + _location) + FVector(width ? -50 : -100, width ? -100 : -50, 50),
+						10,
+						FColor(_shade, width ? _shade : 0, width ? 0 : _shade, 255),
+						true,
+						-1,
+						-2
+					);
+				}
+			#endif
 		}
 
 		_filled_in = true;
